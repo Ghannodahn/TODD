@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  height: 100vw;
+  width: 100vw;
+  overflow: hidden;
+}
+
+@layer components {
+  .app {
+    height: 100vh; /* Use vh for viewport height */
+    width: 100vw;
+    overflow: hidden;
+
+    display: flex;
+    flex-direction: column;
+
+    @apply bg-red-500;
+  }
+  .header {
+    height: 100px;
+    flex-shrink: 0; /* Prevent shrinking */
+    flex-grow: 0;
+
+    @apply bg-blue-500;
+  }
+  .content {
+    flex-grow: 1; /* Take remaining space */
+    overflow-y: scroll; /* Allow vertical scrolling if needed */
+
+    @apply bg-green-500;
+  }
+}
