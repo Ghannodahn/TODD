@@ -1,0 +1,44 @@
+name: Deploy via pnpm script
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write # Still needed to push to gh-pages
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      # Configure Git user for the gh-pages commit
+      - name: Configure Git User
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Run Deploy Script
+        # The GITHUB_TOKEN is automatically available to the script
+        # when run within GitHub Actions with appropriate permissions.
+        # The gh-pages package uses this token implicitly.
+        run: pnpm run deploy
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Explicitly pass if needed, often implicit
