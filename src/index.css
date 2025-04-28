@@ -28,7 +28,7 @@ body {
   }
   .content {
     flex-grow: 1; /* Take remaining space */
-    overflow-y: scroll; /* Allow vertical scrolling if needed */
+    overflow: scroll; /* Allow vertical scrolling if needed */
 
     @apply bg-green-500;
   }

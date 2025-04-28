@@ -1,4 +1,3 @@
-import React, { useState } from 'react'
 import { Brain, Zap, GitMerge, ArrowRightCircle } from 'lucide-react'
 
 const TODDHomepage = () => {
@@ -21,7 +20,10 @@ const TODDHomepage = () => {
   ]
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-green-900 to-green-800 p-6">
+    <div
+      style={{ height: '100%' }}
+      className="flex flex-col items-center justify-center bg-gradient-to-b from-green-900 to-green-800 p-6"
+    >
       <div className="w-full max-w-4xl">
         {/* Hero */}
         <div className="mb-10 text-center">
@@ -66,5 +68,4 @@ const TODDHomepage = () => {
     </div>
   )
 }
-
 export default TODDHomepage

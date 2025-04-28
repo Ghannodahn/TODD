@@ -1,0 +1,1380 @@
+import React, { useState, useEffect, useRef } from 'react'
+
+const ToddComponentViewer = () => {
+  // Component definitions will be loaded from the JSON data
+  const [componentData, setComponentData] = useState({
+    components: { m1: [], m2: [] },
+    typeMapping: {},
+    subjectAreas: {}
+  })
+
+  // Active version state (m1 or m2)
+  const [activeVersion, setActiveVersion] = useState('m1')
+
+  // Active subject area (all, arena, optimizer)
+  const [activeSubjectArea, setActiveSubjectArea] = useState('all')
+
+  // Track positions of components
+  const [positions, setPositions] = useState({})
+
+  // Track which component is being dragged
+  const [draggingId, setDraggingId] = useState(null)
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
+
+  // Interactive states
+  const [selectedComponent, setSelectedComponent] = useState(null)
+  const [hoveredComponent, setHoveredComponent] = useState(null)
+  const [showConnectionsOnly, setShowConnectionsOnly] = useState(false)
+  const [zoomLevel, setZoomLevel] = useState(1)
+
+  // Ref for the SVG element
+  const svgRef = useRef(null)
+
+  // Define subject areas
+  const defineSubjectAreas = (components) => {
+    // Arena subject area includes Arena and directly connected components
+    // excluding Optimizer and its direct connections
+    const arenaArea = {
+      name: 'Arena Ecosystem',
+      description: 'Components related to the Arena testing environment',
+      components: [
+        'arena',
+        'challenge',
+        'solution',
+        'watcher',
+        'judge',
+        'conclusion',
+        'library',
+        'showman',
+        'gptSolution',
+        'toolSolution'
+      ]
+    }
+
+    // Optimizer subject area includes Optimizer and directly connected components
+    const optimizerArea = {
+      name: 'Optimizer Ecosystem',
+      description: 'Components related to the Optimizer improvement system',
+      components: [
+        'optimizer',
+        'prompty',
+        'tuner',
+        'distiller',
+        'integrator',
+        'engineer',
+        'gptSolution',
+        'toolSolution',
+        'recommender'
+      ]
+    }
+
+    return {
+      all: {
+        name: 'Complete Architecture',
+        description: 'All components in the TODD system',
+        components: components.map((c) => c.id)
+      },
+      arena: arenaArea,
+      optimizer: optimizerArea
+    }
+  }
+
+  // Load component definitions
+  useEffect(() => {
+    // This would normally fetch from a file, but we'll embed the data directly
+    const data = {
+      components: {
+        m1: [
+          {
+            id: 'arena',
+            name: 'Arena',
+            type: 'Environment',
+            description:
+              'The component used to pit solutions against each other in Challenges. Provides the environment where solutions compete.',
+            connections: ['challenge', 'solution', 'watcher', 'judge']
+          },
+          {
+            id: 'challenge',
+            name: 'Challenge',
+            type: 'Specification',
+            description:
+              "A mechanism for comparing solutions' performance. Provides context up front (including prompts, attached information), may allow or restrict access to tools and services, and has clear expectations for results.",
+            connections: ['arena', 'solution']
+          },
+          {
+            id: 'solution',
+            name: 'Solution',
+            type: 'Varies',
+            description:
+              'Represents a means of solving a challenge. Initial implementation presents each AI release (Claude 3.7, ChatGPT 4o, Gemini 2.0, and Perplexity) as a Solution.',
+            connections: ['arena', 'challenge']
+          },
+          {
+            id: 'watcher',
+            name: 'Watcher',
+            type: 'Agent',
+            description: 'Observes a challenge and records the results.',
+            connections: ['arena', 'conclusion']
+          },
+          {
+            id: 'judge',
+            name: 'Judge',
+            type: 'Agent',
+            description:
+              'Measures various aspects of the result including speed, accuracy, and aesthetics. Declares the "winner" and provides context for the decision.',
+            connections: ['arena', 'conclusion']
+          },
+          {
+            id: 'conclusion',
+            name: 'Conclusion',
+            type: 'Data',
+            description: "A final summary of the Judge(s)' findings.",
+            connections: ['watcher', 'judge', 'library']
+          },
+          {
+            id: 'library',
+            name: 'Library',
+            type: 'Data',
+            description:
+              'Stores information on Solutions, Challenges, Results, and Conclusions.',
+            connections: ['conclusion', 'showman']
+          },
+          {
+            id: 'showman',
+            name: 'Showman',
+            type: 'Frontend',
+            description:
+              'A website that allows browsing and defining challenges. Its UX should feel like an RPG game with the Solutions presented as characters with attributes and stats.',
+            connections: ['library']
+          }
+        ],
+        m2: [
+          {
+            id: 'gptSolution',
+            name: 'GPT Solution',
+            type: 'Solution',
+            description:
+              'Evolved from M1 Solutions, specifically GPT Solutions (Claude 3.7, ChatGPT 4o, Gemini 2.0, and Perplexity).',
+            connections: ['arena', 'challenge', 'optimizer']
+          },
+          {
+            id: 'toolSolution',
+            name: 'Tool Solution',
+            type: 'Solution',
+            description: 'A non-AI solution to a problem.',
+            connections: ['arena', 'challenge', 'optimizer']
+          },
+          {
+            id: 'recommender',
+            name: 'Recommender',
+            type: 'Agent',
+            description:
+              'Responsible for proactively identifying the best solution for a task.',
+            connections: ['challenge', 'gptSolution', 'toolSolution']
+          },
+          {
+            id: 'optimizer',
+            name: 'Optimizer',
+            type: 'Agent',
+            description:
+              'Responsible for imagining and designing improvements to a solution. May include fine-tuning, distilled models, existing tooling, and/or authoring new tools.',
+            connections: [
+              'gptSolution',
+              'toolSolution',
+              'prompty',
+              'tuner',
+              'distiller',
+              'integrator',
+              'engineer'
+            ]
+          },
+          {
+            id: 'prompty',
+            name: 'Prompty',
+            type: 'Agent',
+            description:
+              'Rewrites a Challenge (including but not limited to prompts) based on a spec from Optimizer.',
+            connections: ['optimizer', 'challenge']
+          },
+          {
+            id: 'tuner',
+            name: 'Tuner',
+            type: 'Agent',
+            description: 'Provides a fine-tuned version of a model.',
+            connections: ['optimizer', 'gptSolution']
+          },
+          {
+            id: 'distiller',
+            name: 'Distiller',
+            type: 'Agent',
+            description:
+              'Produces a distilled model more optimized to a challenge or set of challenges.',
+            connections: ['optimizer', 'gptSolution']
+          },
+          {
+            id: 'integrator',
+            name: 'Integrator',
+            type: 'Agent',
+            description: 'Uses existing tooling.',
+            connections: ['optimizer', 'toolSolution']
+          },
+          {
+            id: 'engineer',
+            name: 'Engineer',
+            type: 'Agent',
+            description: 'Creates new tooling.',
+            connections: ['optimizer', 'toolSolution']
+          }
+        ]
+      },
+      typeMapping: {
+        Environment: {
+          color: '#4CAF50',
+          icon: 'environment'
+        },
+        Specification: {
+          color: '#2196F3',
+          icon: 'specification'
+        },
+        Varies: {
+          color: '#9C27B0',
+          icon: 'varies'
+        },
+        Solution: {
+          color: '#9C27B0',
+          icon: 'solution'
+        },
+        Agent: {
+          color: '#FF9800',
+          icon: 'agent'
+        },
+        Data: {
+          color: '#795548',
+          icon: 'data'
+        },
+        Frontend: {
+          color: '#E91E63',
+          icon: 'frontend'
+        }
+      }
+    }
+
+    // Define subject areas
+    const allComponents = [...data.components.m1, ...data.components.m2]
+    const subjectAreas = defineSubjectAreas(allComponents)
+
+    setComponentData({
+      ...data,
+      subjectAreas
+    })
+
+    // Initialize positions in a circular layout for each subject area
+    const initialPositions = {}
+
+    // Position components in a circle
+    const positionComponentsInCircle = (
+      components,
+      centerX,
+      centerY,
+      radius
+    ) => {
+      const angleStep = (2 * Math.PI) / components.length
+
+      components.forEach((component, index) => {
+        const angle = index * angleStep
+        initialPositions[component.id] = {
+          x: centerX + radius * Math.cos(angle),
+          y: centerY + radius * Math.sin(angle),
+          width: 140,
+          height: 80
+        }
+      })
+    }
+
+    // Position M1 components in a circle
+    positionComponentsInCircle(data.components.m1, 400, 300, 200)
+
+    // Position M2-only components in a separate area
+    const m2OnlyComponents = data.components.m2.filter(
+      (c) => !data.components.m1.some((m1c) => m1c.id === c.id)
+    )
+
+    positionComponentsInCircle(m2OnlyComponents, 700, 300, 150)
+
+    setPositions(initialPositions)
+  }, [])
+
+  // Grid snapping settings
+  const [snapToGrid, setSnapToGrid] = useState(true)
+  const gridSize = 10 // 10x10 pixel grid
+
+  // Track if we're actually dragging vs just clicking
+  const [isDragging, setIsDragging] = useState(false)
+  const dragStartPos = useRef({ x: 0, y: 0 })
+
+  // Handle mouse down for dragging
+  const handleMouseDown = (e, id) => {
+    const svg = svgRef.current
+    if (!svg) return
+
+    const pt = svg.createSVGPoint()
+    pt.x = e.clientX
+    pt.y = e.clientY
+    const svgP = pt.matrixTransform(svg.getScreenCTM().inverse())
+
+    // Save initial position for determining whether a drag occurred
+    dragStartPos.current = { x: e.clientX, y: e.clientY }
+
+    const pos = positions[id]
+    setDraggingId(id)
+    setIsDragging(false) // Reset drag state
+    setDragOffset({
+      x: pos.x - svgP.x,
+      y: pos.y - svgP.y
+    })
+  }
+
+  // Handle mouse move for dragging
+  const handleMouseMove = (e) => {
+    if (draggingId && svgRef.current) {
+      // Calculate distance moved to determine if we're dragging
+      const dx = Math.abs(e.clientX - dragStartPos.current.x)
+      const dy = Math.abs(e.clientY - dragStartPos.current.y)
+
+      // If moved more than 3 pixels, consider it a drag
+      if (dx > 3 || dy > 3) {
+        setIsDragging(true)
+      }
+
+      const svg = svgRef.current
+      const pt = svg.createSVGPoint()
+      pt.x = e.clientX
+      pt.y = e.clientY
+      const svgP = pt.matrixTransform(svg.getScreenCTM().inverse())
+
+      let newX = svgP.x + dragOffset.x
+      let newY = svgP.y + dragOffset.y
+
+      // Snap to grid if enabled
+      if (snapToGrid) {
+        newX = Math.round(newX / gridSize) * gridSize
+        newY = Math.round(newY / gridSize) * gridSize
+      }
+
+      // Create new positions object
+      const newPositions = { ...positions }
+
+      // If we're dragging a component that's in the selection
+      if (selectedComponents.includes(draggingId)) {
+        // Move all selected components by the same delta
+        const currentComponent = positions[draggingId]
+        const deltaX = newX - currentComponent.x
+        const deltaY = newY - currentComponent.y
+
+        // Update all selected components
+        selectedComponents.forEach((id) => {
+          if (newPositions[id]) {
+            let updatedX = newPositions[id].x + deltaX
+            let updatedY = newPositions[id].y + deltaY
+
+            // Apply grid snapping if enabled
+            if (snapToGrid) {
+              updatedX = Math.round(updatedX / gridSize) * gridSize
+              updatedY = Math.round(updatedY / gridSize) * gridSize
+            }
+
+            newPositions[id] = {
+              ...newPositions[id],
+              x: updatedX,
+              y: updatedY
+            }
+          }
+        })
+      } else {
+        // Just move the dragged component
+        newPositions[draggingId] = {
+          ...newPositions[draggingId],
+          x: newX,
+          y: newY
+        }
+      }
+
+      setPositions(newPositions)
+    }
+  }
+
+  // Handle mouse up to end dragging
+  const handleMouseUp = (e) => {
+    if (draggingId) {
+      // If we didn't drag (just clicked), select the component
+      if (!isDragging) {
+        handleComponentSelect(draggingId)
+      }
+
+      // Reset dragging state
+      setDraggingId(null)
+      setIsDragging(false)
+    }
+  }
+
+  // Get all active components based on the current version and subject area
+  const getActiveComponents = () => {
+    let components = []
+
+    // First, get components based on version
+    if (activeVersion === 'm1') {
+      components = componentData.components.m1
+    } else {
+      // For M2, we include both M1 and M2 components
+      components = [
+        ...componentData.components.m1,
+        ...componentData.components.m2
+      ]
+    }
+
+    // Then filter by subject area if not viewing all
+    if (
+      activeSubjectArea !== 'all' &&
+      componentData.subjectAreas[activeSubjectArea]
+    ) {
+      const areaComponentIds =
+        componentData.subjectAreas[activeSubjectArea].components
+      components = components.filter((c) => areaComponentIds.includes(c.id))
+    }
+
+    return components
+  }
+
+  // Track multiple selected components
+  const [selectedComponents, setSelectedComponents] = useState([])
+
+  // Handle component selection
+  const handleComponentSelect = (componentId) => {
+    if (window.event.shiftKey) {
+      // Multi-select with Shift key
+      if (selectedComponents.includes(componentId)) {
+        // If already selected, remove it
+        setSelectedComponents(
+          selectedComponents.filter((id) => id !== componentId)
+        )
+      } else {
+        // Add to selection
+        setSelectedComponents([...selectedComponents, componentId])
+      }
+    } else {
+      // Single select without Shift
+      if (
+        selectedComponents.length === 1 &&
+        selectedComponents[0] === componentId
+      ) {
+        // Deselect if already the only selected
+        setSelectedComponents([])
+      } else {
+        // Select only this component
+        setSelectedComponents([componentId])
+      }
+    }
+
+    // For backward compatibility, also set the selectedComponent for detail view
+    // Only show details for a single component
+    if (!window.event.shiftKey || selectedComponents.length === 0) {
+      setSelectedComponent(componentId)
+    }
+  }
+
+  // Handle component hover
+  const handleComponentHover = (componentId) => {
+    setHoveredComponent(componentId)
+  }
+
+  // Handle component hover end
+  const handleComponentHoverEnd = () => {
+    setHoveredComponent(null)
+  }
+
+  // Get connected components for highlighting
+  const getConnectedComponents = (componentId) => {
+    if (!componentId) return []
+
+    const component = getActiveComponents().find((c) => c.id === componentId)
+    if (!component) return []
+
+    // Get direct connections
+    const directConnections = component.connections || []
+
+    // Get components that connect to this component
+    const incomingConnections = getActiveComponents()
+      .filter((c) => c.connections?.includes(componentId))
+      .map((c) => c.id)
+
+    return [...new Set([...directConnections, ...incomingConnections])]
+  }
+
+  // Is this component new in M2?
+  const isNewInM2 = (componentId) => {
+    return (
+      activeVersion === 'm2' &&
+      !componentData.components.m1.some((c) => c.id === componentId) &&
+      componentData.components.m2.some((c) => c.id === componentId)
+    )
+  }
+
+  // Calculate the connection paths between components
+  const getConnectionPath = (sourceId, targetId) => {
+    // Skip if we don't have positions for these components yet
+    if (!positions[sourceId] || !positions[targetId]) return ''
+
+    const source = positions[sourceId]
+    const target = positions[targetId]
+
+    const sourceWidth = source.width || 140
+    const sourceHeight = source.height || 80
+    const targetWidth = target.width || 140
+    const targetHeight = target.height || 80
+
+    // Calculate center points
+    const sourceX = source.x + sourceWidth / 2
+    const sourceY = source.y + sourceHeight / 2
+    const targetX = target.x + targetWidth / 2
+    const targetY = target.y + targetHeight / 2
+
+    // Direction vector
+    const dx = targetX - sourceX
+    const dy = targetY - sourceY
+    const length = Math.sqrt(dx * dx + dy * dy)
+
+    // Normalized direction
+    const nx = dx / length
+    const ny = dy / length
+
+    // Find intersection with the rectangle's border
+    // We'll adjust by using a slightly shorter line to accommodate the arrowhead
+    const arrowHeadOffset = 5 // Offset to ensure arrowhead aligns with component edge
+
+    // Calculate the intersections with the component borders
+    let sourceIntersectX, sourceIntersectY, targetIntersectX, targetIntersectY
+
+    // Find source component exit point
+    if (Math.abs(nx) * sourceHeight > Math.abs(ny) * sourceWidth) {
+      // Exiting through left or right edge
+      const xSign = nx > 0 ? 1 : -1
+      sourceIntersectX = sourceX + (xSign * sourceWidth) / 2
+      sourceIntersectY = sourceY + ((ny / nx) * xSign * sourceWidth) / 2
+    } else {
+      // Exiting through top or bottom edge
+      const ySign = ny > 0 ? 1 : -1
+      sourceIntersectY = sourceY + (ySign * sourceHeight) / 2
+      sourceIntersectX = sourceX + ((nx / ny) * ySign * sourceHeight) / 2
+    }
+
+    // Find target component entry point, adjusted for arrowhead
+    if (Math.abs(nx) * targetHeight > Math.abs(ny) * targetWidth) {
+      // Entering through left or right edge
+      const xSign = nx > 0 ? 1 : -1
+      targetIntersectX = targetX - (xSign * targetWidth) / 2
+      targetIntersectY = targetY - ((ny / nx) * xSign * targetWidth) / 2
+    } else {
+      // Entering through top or bottom edge
+      const ySign = ny > 0 ? 1 : -1
+      targetIntersectY = targetY - (ySign * targetHeight) / 2
+      targetIntersectX = targetX - ((nx / ny) * ySign * targetHeight) / 2
+    }
+
+    // Adjust target point to account for arrowhead size
+    const adjustedTargetX = targetIntersectX - nx * arrowHeadOffset
+    const adjustedTargetY = targetIntersectY - ny * arrowHeadOffset
+
+    return `M ${sourceIntersectX} ${sourceIntersectY} L ${adjustedTargetX} ${adjustedTargetY}`
+  }
+
+  // Handle version change
+  const handleVersionChange = (version) => {
+    setActiveVersion(version)
+    resetPositionsForCurrentSelection()
+  }
+
+  // Handle subject area change
+  const handleSubjectAreaChange = (area) => {
+    setActiveSubjectArea(area)
+    resetPositionsForCurrentSelection()
+  }
+
+  // Reset positions for the current selection
+  const resetPositionsForCurrentSelection = () => {
+    const components = getActiveComponents()
+    const newPositions = { ...positions }
+
+    // Position components in appropriate formations based on subject area
+    const centerX = 400
+    const centerY = 300
+    const radius = 200
+
+    if (activeSubjectArea === 'arena') {
+      // Arena in center, challenges and solutions nearby, others in circle
+      const arenaComponent = components.find((c) => c.id === 'arena')
+      if (arenaComponent) {
+        // Place Arena at center
+        newPositions['arena'] = {
+          ...newPositions['arena'],
+          x: centerX,
+          y: centerY,
+          width: 140,
+          height: 80
+        }
+
+        // Place directly connected components in a circle around Arena
+        const arenaConnections = components.filter(
+          (c) =>
+            c.id !== 'arena' &&
+            (c.connections.includes('arena') ||
+              arenaComponent.connections.includes(c.id))
+        )
+
+        const angleStep = (2 * Math.PI) / arenaConnections.length
+        arenaConnections.forEach((component, index) => {
+          const angle = index * angleStep
+          newPositions[component.id] = {
+            ...newPositions[component.id],
+            x: centerX + radius * 0.6 * Math.cos(angle),
+            y: centerY + radius * 0.6 * Math.sin(angle)
+          }
+        })
+
+        // Place remaining components in an outer circle
+        const remainingComponents = components.filter((c) => {
+          return (
+            c.id !== 'arena' && !arenaConnections.some((ac) => ac.id === c.id)
+          )
+        })
+
+        const remainingAngleStep =
+          (2 * Math.PI) / (remainingComponents.length || 1)
+        remainingComponents.forEach((component, index) => {
+          const angle = index * remainingAngleStep
+          newPositions[component.id] = {
+            ...newPositions[component.id],
+            x: centerX + radius * 1.3 * Math.cos(angle),
+            y: centerY + radius * 1.3 * Math.sin(angle)
+          }
+        })
+      }
+    } else if (activeSubjectArea === 'optimizer') {
+      // Optimizer in center, direct connections nearby
+      const optimizerComponent = components.find((c) => c.id === 'optimizer')
+      if (optimizerComponent) {
+        // Place Optimizer at center
+        newPositions['optimizer'] = {
+          ...newPositions['optimizer'],
+          x: centerX,
+          y: centerY,
+          width: 140,
+          height: 80
+        }
+
+        // Place directly connected components in a circle around Optimizer
+        const optimizerConnections = components.filter(
+          (c) =>
+            c.id !== 'optimizer' &&
+            (c.connections.includes('optimizer') ||
+              optimizerComponent.connections.includes(c.id))
+        )
+
+        const angleStep = (2 * Math.PI) / optimizerConnections.length
+        optimizerConnections.forEach((component, index) => {
+          const angle = index * angleStep
+          newPositions[component.id] = {
+            ...newPositions[component.id],
+            x: centerX + radius * 0.6 * Math.cos(angle),
+            y: centerY + radius * 0.6 * Math.sin(angle)
+          }
+        })
+
+        // Place remaining components in an outer circle
+        const remainingComponents = components.filter((c) => {
+          return (
+            c.id !== 'optimizer' &&
+            !optimizerConnections.some((oc) => oc.id === c.id)
+          )
+        })
+
+        const remainingAngleStep =
+          (2 * Math.PI) / (remainingComponents.length || 1)
+        remainingComponents.forEach((component, index) => {
+          const angle = index * remainingAngleStep
+          newPositions[component.id] = {
+            ...newPositions[component.id],
+            x: centerX + radius * 1.3 * Math.cos(angle),
+            y: centerY + radius * 1.3 * Math.sin(angle)
+          }
+        })
+      }
+    } else {
+      // Default circular layout for "all" view
+      const angleStep = (2 * Math.PI) / components.length
+      components.forEach((component, index) => {
+        const angle = index * angleStep
+        newPositions[component.id] = {
+          ...newPositions[component.id],
+          x: centerX + radius * Math.cos(angle),
+          y: centerY + radius * Math.sin(angle)
+        }
+      })
+    }
+
+    setPositions(newPositions)
+  }
+
+  // Reset positions to default circular layout
+  const resetPositions = () => {
+    resetPositionsForCurrentSelection()
+  }
+
+  // Find selected component details
+  const selectedComponentDetails = selectedComponent
+    ? getActiveComponents().find((c) => c.id === selectedComponent)
+    : null
+
+  // Handle global key events
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Handle ESC key to deselect component
+      if (e.key === 'Escape') {
+        setSelectedComponent(null)
+      }
+    }
+
+    // Add event listener
+    window.addEventListener('keydown', handleKeyDown)
+
+    // Clean up
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [])
+
+  // State for JSON editor modal
+  const [showJsonEditor, setShowJsonEditor] = useState(false)
+  const [jsonEditorContent, setJsonEditorContent] = useState('')
+
+  // Handle opening the JSON editor
+  const openJsonEditor = () => {
+    // Convert current positions to formatted JSON
+    const formattedJson = JSON.stringify(positions, null, 2)
+    setJsonEditorContent(formattedJson)
+    setShowJsonEditor(true)
+  }
+
+  // Handle saving JSON changes
+  const saveJsonChanges = () => {
+    try {
+      // Parse the JSON from the editor
+      const newPositions = JSON.parse(jsonEditorContent)
+
+      // Apply the new positions
+      setPositions(newPositions)
+
+      // Close the modal
+      setShowJsonEditor(false)
+    } catch (error) {
+      // Alert the user about invalid JSON
+      alert(`Invalid JSON: ${error.message}`)
+    }
+  }
+
+  // Handle closing the JSON editor without saving
+  const closeJsonEditor = () => {
+    setShowJsonEditor(false)
+  }
+
+  // Handle background click to deselect
+  const handleBackgroundClick = (e) => {
+    // Only handle direct clicks on the SVG background, not on components
+    if (e.target === svgRef.current) {
+      setSelectedComponent(null)
+    }
+  }
+
+  // Generate the SVG content
+  const renderSVG = () => {
+    const activeComponents = getActiveComponents()
+    const connectedComponents = hoveredComponent
+      ? getConnectedComponents(hoveredComponent)
+      : selectedComponent && showConnectionsOnly
+        ? getConnectedComponents(selectedComponent)
+        : []
+
+    return (
+      <svg
+        ref={svgRef}
+        width="100%"
+        height="100%"
+        viewBox="0 0 800 600"
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+        onClick={handleBackgroundClick}
+        style={{ backgroundColor: '#fafafa' }}
+      >
+        <defs>
+          <marker
+            id="arrowhead"
+            markerWidth="10"
+            markerHeight="7"
+            refX="7"
+            refY="3.5"
+            orient="auto"
+          >
+            <polygon points="0 0, 7 3.5, 0 7" fill="#555" />
+          </marker>
+
+          {/* Grid pattern definition */}
+          <pattern
+            id="grid"
+            width={gridSize}
+            height={gridSize}
+            patternUnits="userSpaceOnUse"
+          >
+            <path
+              d={`M ${gridSize} 0 L 0 0 0 ${gridSize}`}
+              fill="none"
+              stroke="rgba(0,0,0,0.05)"
+              strokeWidth="0.5"
+            />
+          </pattern>
+        </defs>
+
+        {/* Grid background */}
+        {snapToGrid && <rect width="800" height="600" fill="url(#grid)" />}
+
+        {/* Subject area background highlight */}
+        {activeSubjectArea !== 'all' && (
+          <rect
+            x="50"
+            y="50"
+            width="700"
+            height="500"
+            rx="20"
+            ry="20"
+            fill={
+              activeSubjectArea === 'arena'
+                ? 'rgba(76, 175, 80, 0.1)'
+                : 'rgba(255, 152, 0, 0.1)'
+            }
+            stroke={activeSubjectArea === 'arena' ? '#4CAF50' : '#FF9800'}
+            strokeWidth="1"
+            strokeDasharray="5,3"
+          />
+        )}
+
+        {/* Subject area title */}
+        {activeSubjectArea !== 'all' &&
+          componentData.subjectAreas[activeSubjectArea] && (
+            <text
+              x="80"
+              y="80"
+              fontWeight="bold"
+              fontSize="18"
+              fill={activeSubjectArea === 'arena' ? '#4CAF50' : '#FF9800'}
+            >
+              {componentData.subjectAreas[activeSubjectArea].name}
+            </text>
+          )}
+
+        {/* Render connections first */}
+        {activeComponents.map((component) => {
+          // Filter connections to only include visible components
+          const visibleConnections = component.connections.filter((targetId) =>
+            activeComponents.some((c) => c.id === targetId)
+          )
+
+          return visibleConnections.map((targetId) => {
+            const isNewConnection =
+              isNewInM2(component.id) || isNewInM2(targetId)
+            const path = getConnectionPath(component.id, targetId)
+
+            // Determine if this connection should be highlighted
+            const isHighlighted =
+              (hoveredComponent &&
+                (component.id === hoveredComponent ||
+                  targetId === hoveredComponent)) ||
+              (selectedComponent &&
+                showConnectionsOnly &&
+                (component.id === selectedComponent ||
+                  targetId === selectedComponent))
+
+            // Apply extra styling for connections related to hovered/selected component
+            const highlightStroke =
+              hoveredComponent === component.id ||
+              selectedComponent === component.id
+                ? componentData.typeMapping[component.type]?.color || '#555'
+                : componentData.typeMapping[
+                    activeComponents.find((c) => c.id === targetId)?.type
+                  ]?.color || '#555'
+
+            return (
+              <path
+                key={`${component.id}-${targetId}`}
+                d={path}
+                stroke={
+                  isHighlighted
+                    ? highlightStroke
+                    : isNewConnection
+                      ? '#FF5722'
+                      : '#555'
+                }
+                strokeWidth={isHighlighted ? '2.5' : '1.5'}
+                strokeDasharray={isNewConnection ? '5,3' : 'none'}
+                fill="none"
+                markerEnd="url(#arrowhead)"
+                opacity={
+                  isHighlighted
+                    ? '1'
+                    : connectedComponents.length > 0 &&
+                        !connectedComponents.includes(component.id) &&
+                        !connectedComponents.includes(targetId)
+                      ? '0.2'
+                      : '0.7'
+                }
+              />
+            )
+          })
+        })}
+
+        {/* Render components */}
+        {activeComponents.map((component) => {
+          if (!positions[component.id]) return null
+
+          const pos = positions[component.id]
+          const isNew = isNewInM2(component.id)
+          const typeInfo = componentData.typeMapping[component.type] || {}
+          const color = typeInfo.color || '#999'
+
+          // Special highlighting for focal components of subject areas
+          const isFocalComponent =
+            (activeSubjectArea === 'arena' && component.id === 'arena') ||
+            (activeSubjectArea === 'optimizer' && component.id === 'optimizer')
+
+          {
+            /* Interactive states */
+          }
+          const isSelected = selectedComponent === component.id
+          const isMultiSelected = selectedComponents.includes(component.id)
+          const isHovered = hoveredComponent === component.id
+          const isConnected = hoveredComponent
+            ? getConnectedComponents(hoveredComponent).includes(component.id)
+            : selectedComponent && showConnectionsOnly
+              ? getConnectedComponents(selectedComponent).includes(component.id)
+              : false
+
+          // Apply opacity based on connection highlighting
+          const componentOpacity =
+            (hoveredComponent || (selectedComponent && showConnectionsOnly)) &&
+            !isHovered &&
+            !isMultiSelected &&
+            !isConnected &&
+            component.id !== hoveredComponent
+              ? '0.4'
+              : '1'
+
+          return (
+            <g
+              key={component.id}
+              transform={`translate(${pos.x}, ${pos.y})`}
+              onMouseDown={(e) => {
+                // If it's not a right-click, handle as drag
+                if (e.button !== 2) {
+                  handleMouseDown(e, component.id)
+
+                  // Prevent default to avoid text selection
+                  e.preventDefault()
+                }
+              }}
+              // Removed onClick handler - selection now happens on mouseUp if no drag occurred
+              onMouseEnter={() => handleComponentHover(component.id)}
+              onMouseLeave={handleComponentHoverEnd}
+              style={{
+                cursor: draggingId === component.id ? 'grabbing' : 'pointer',
+                transition: 'opacity 0.2s ease-in-out'
+              }}
+            >
+              {/* Component shadow for selected/hovered state */}
+              {(selectedComponents.includes(component.id) || isHovered) && (
+                <rect
+                  width="148"
+                  height="88"
+                  x="-4"
+                  y="-4"
+                  rx="12"
+                  ry="12"
+                  fill="none"
+                  stroke={
+                    selectedComponents.includes(component.id)
+                      ? '#FFEB3B'
+                      : isHovered
+                        ? '#E0E0E0'
+                        : 'transparent'
+                  }
+                  strokeWidth="2"
+                  opacity="0.8"
+                />
+              )}
+
+              {/* Component rectangle */}
+              <rect
+                width="140"
+                height="80"
+                rx="10"
+                ry="10"
+                fill={color}
+                stroke={
+                  selectedComponents.includes(component.id)
+                    ? '#FFEB3B'
+                    : isHovered
+                      ? '#FFF'
+                      : isFocalComponent
+                        ? '#FFF'
+                        : isNew
+                          ? '#FF5722'
+                          : '#000'
+                }
+                strokeWidth={
+                  selectedComponents.includes(component.id) || isHovered
+                    ? '3'
+                    : isFocalComponent
+                      ? '3'
+                      : isNew
+                        ? '2'
+                        : '1'
+                }
+                strokeDasharray={isNew ? '5,3' : 'none'}
+                opacity={componentOpacity}
+              />
+
+              {/* Component name */}
+              <text
+                x="70"
+                y="30"
+                textAnchor="middle"
+                fill="white"
+                fontWeight="bold"
+                fontSize={isFocalComponent ? '18' : '16'}
+              >
+                {component.name}
+              </text>
+
+              {/* Component type */}
+              <text
+                x="70"
+                y="50"
+                textAnchor="middle"
+                fill="white"
+                fontSize="12"
+              >
+                «{component.type}»
+              </text>
+
+              {/* Drag handle visual indicator */}
+              <rect
+                x="55"
+                y="65"
+                width="30"
+                height="5"
+                rx="2"
+                fill="rgba(255,255,255,0.7)"
+              />
+            </g>
+          )
+        })}
+      </svg>
+    )
+  }
+
+  return (
+    <div className="flex h-full flex-col">
+      {/* Header with controls */}
+      <div className="bg-gray-800 p-3 text-white">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold">TODD Architecture Viewer</h1>
+            <p className="text-sm text-gray-300">
+              Tool-Orchestrated Development & Diagnostics
+            </p>
+          </div>
+
+          <div className="flex space-x-2">
+            <button
+              className={`rounded px-3 py-1 text-sm ${
+                activeVersion === 'm1' ? 'bg-blue-600' : 'bg-gray-600'
+              }`}
+              onClick={() => handleVersionChange('m1')}
+            >
+              M1 Version
+            </button>
+            <button
+              className={`rounded px-3 py-1 text-sm ${
+                activeVersion === 'm2' ? 'bg-blue-600' : 'bg-gray-600'
+              }`}
+              onClick={() => handleVersionChange('m2')}
+            >
+              M2 Version
+            </button>
+          </div>
+        </div>
+
+        {/* Subject Area Selector */}
+        <div className="mt-2 flex space-x-2">
+          <button
+            className={`rounded px-3 py-1 text-sm ${
+              activeSubjectArea === 'all' ? 'bg-purple-600' : 'bg-gray-600'
+            }`}
+            onClick={() => handleSubjectAreaChange('all')}
+          >
+            All Components
+          </button>
+          <button
+            className={`rounded px-3 py-1 text-sm ${
+              activeSubjectArea === 'arena' ? 'bg-green-600' : 'bg-gray-600'
+            }`}
+            onClick={() => handleSubjectAreaChange('arena')}
+          >
+            Arena Ecosystem
+          </button>
+          <button
+            className={`rounded px-3 py-1 text-sm ${
+              activeSubjectArea === 'optimizer'
+                ? 'bg-orange-600'
+                : 'bg-gray-600'
+            }`}
+            onClick={() => handleSubjectAreaChange('optimizer')}
+          >
+            Optimizer Ecosystem
+          </button>
+
+          <div className="ml-auto flex items-center">
+            <button
+              className="mr-2 rounded bg-red-600 px-3 py-1 text-sm hover:bg-red-500"
+              onClick={() => {
+                // Clear selection
+                setSelectedComponents([])
+                setSelectedComponent(null)
+              }}
+              disabled={selectedComponents.length === 0}
+            >
+              Clear Selection ({selectedComponents.length})
+            </button>
+            <button
+              className="mr-2 rounded bg-purple-600 px-3 py-1 text-sm hover:bg-purple-500"
+              onClick={openJsonEditor}
+            >
+              Edit JSON
+            </button>
+            <button
+              className="rounded bg-gray-600 px-3 py-1 text-sm hover:bg-gray-500"
+              onClick={resetPositions}
+            >
+              Reset Layout
+            </button>
+            <label className="ml-2 flex items-center text-sm">
+              <input
+                type="checkbox"
+                checked={snapToGrid}
+                onChange={() => setSnapToGrid(!snapToGrid)}
+                className="mr-1"
+              />
+              Grid Snap
+            </label>
+          </div>
+        </div>
+      </div>
+
+      {/* Main content area */}
+      <div className="relative flex flex-1 overflow-hidden">
+        {/* Main diagram area */}
+        <div className="flex-1 overflow-hidden bg-white">{renderSVG()}</div>
+
+        {/* Component details panel */}
+        {selectedComponentDetails && (
+          <div className="absolute inset-y-0 right-0 w-64 overflow-y-auto border-l border-gray-200 bg-white p-3 shadow-lg">
+            <div
+              className="mb-3 flex h-10 w-full items-center justify-center rounded font-bold text-white"
+              style={{
+                backgroundColor:
+                  componentData.typeMapping[selectedComponentDetails.type]
+                    ?.color || '#999'
+              }}
+            >
+              {selectedComponentDetails.name}
+            </div>
+
+            {/* Interactive controls */}
+            <div className="mb-3 flex items-center justify-between rounded bg-gray-100 p-1 text-sm">
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={showConnectionsOnly}
+                  onChange={() => setShowConnectionsOnly(!showConnectionsOnly)}
+                  className="mr-1"
+                />
+                Highlight Connections
+              </label>
+            </div>
+
+            <div className="mb-3">
+              <span className="text-xs text-gray-500">Type:</span>
+              <p className="text-sm font-medium">
+                {selectedComponentDetails.type}
+              </p>
+            </div>
+
+            <div className="mb-3">
+              <span className="text-xs text-gray-500">Description:</span>
+              <p className="text-sm">{selectedComponentDetails.description}</p>
+            </div>
+
+            <div>
+              <span className="text-xs text-gray-500">Connections:</span>
+              <div className="mt-1 flex flex-wrap gap-1">
+                {selectedComponentDetails.connections.map((conn) => {
+                  const connComponent = getActiveComponents().find(
+                    (c) => c.id === conn
+                  )
+                  if (!connComponent) return null
+
+                  return (
+                    <span
+                      key={conn}
+                      className="cursor-pointer rounded-full px-2 py-1 text-xs text-white hover:opacity-80"
+                      style={{
+                        backgroundColor:
+                          componentData.typeMapping[connComponent.type]
+                            ?.color || '#999'
+                      }}
+                      onClick={() => {
+                        // Switch to this component when clicked
+                        setSelectedComponent(conn)
+                      }}
+                    >
+                      {connComponent.name}
+                    </span>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Incoming connections */}
+            <div className="mt-3">
+              <span className="text-xs text-gray-500">Referenced by:</span>
+              <div className="mt-1 flex flex-wrap gap-1">
+                {getActiveComponents()
+                  .filter(
+                    (c) => c.connections?.includes(selectedComponentDetails.id)
+                  )
+                  .map((incomingComp) => (
+                    <span
+                      key={incomingComp.id}
+                      className="cursor-pointer rounded-full border px-2 py-1 text-xs hover:opacity-80"
+                      style={{
+                        borderColor:
+                          componentData.typeMapping[incomingComp.type]?.color ||
+                          '#999',
+                        color:
+                          componentData.typeMapping[incomingComp.type]?.color ||
+                          '#999'
+                      }}
+                      onClick={() => {
+                        // Switch to this component when clicked
+                        setSelectedComponent(incomingComp.id)
+                      }}
+                    >
+                      {incomingComp.name}
+                    </span>
+                  ))}
+              </div>
+            </div>
+
+            {/* Component is new in M2 */}
+            {isNewInM2(selectedComponentDetails.id) && (
+              <div className="mt-3 rounded border border-orange-300 bg-orange-100 p-2 text-xs">
+                This component is new in the M2 architecture.
+              </div>
+            )}
+
+            {/* Close button */}
+            <button
+              className="absolute right-1 top-1 text-gray-500 hover:text-gray-700"
+              onClick={() => setSelectedComponent(null)}
+            >
+              ✕
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Legend */}
+      <div className="flex flex-wrap items-center bg-gray-800 p-2 text-xs text-white">
+        <div className="mr-4">Legend:</div>
+        {Object.entries(componentData.typeMapping).map(([type, info]) => (
+          <div key={type} className="mr-3 flex items-center">
+            <div
+              className="mr-1 size-3 rounded"
+              style={{ backgroundColor: info.color }}
+            ></div>
+            <span>{type}</span>
+          </div>
+        ))}
+
+        {activeVersion === 'm2' && (
+          <div className="ml-2 flex items-center">
+            <div className="mr-1 h-3 w-5 border border-dashed border-orange-500"></div>
+            <span>New in M2</span>
+          </div>
+        )}
+
+        <div className="ml-auto text-gray-300">
+          Drag to reposition | Click to select | Shift+Click for multi-select
+        </div>
+      </div>
+
+      {/* JSON Editor Modal */}
+      {showJsonEditor && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="flex size-3/4 max-w-4xl flex-col rounded-lg bg-white shadow-xl">
+            <div className="flex items-center justify-between border-b border-gray-200 p-4">
+              <h2 className="text-lg font-bold">Edit Layout JSON</h2>
+              <button
+                onClick={closeJsonEditor}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="grow overflow-hidden p-4">
+              <textarea
+                className="size-full min-h-[240px] rounded border border-gray-300 p-2 font-mono text-sm"
+                value={jsonEditorContent}
+                onChange={(e) => setJsonEditorContent(e.target.value)}
+                spellCheck="false"
+              />
+            </div>
+            <div className="flex justify-end border-t border-gray-200 p-4">
+              <button
+                onClick={closeJsonEditor}
+                className="mr-2 rounded bg-gray-300 px-4 py-2 hover:bg-gray-400"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveJsonChanges}
+                className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+              >
+                Apply Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default ToddComponentViewer
