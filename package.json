@@ -1,17 +1,18 @@
 {
-  "name": "reactjs-vite-tailwindcss-boilerplate",
-  "description": "This is a boilerplate build with Vite, React 18, TypeScript, Vitest, Testing Library, TailwindCSS 3, Eslint and Prettier.",
+  "name": "todd",
+  "description": "A playground of AI toys and learnings.",
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "notes": "Used React/Vite/Tailwind starter kit at https://github.com/joaopaulomoraes/reactjs-vite-tailwindcss-boilerplate",
   "author": {
-    "name": "João Paulo Moraes",
-    "email": "joaopaulomoraes@outlook.com",
-    "url": "https://github.com/joaopaulomoraes"
+    "name": "Joe Allan Muharsky",
+    "email": "joemu@bassicnerd.com",
+    "url": "http://www.bassicnerd.com"
   },
   "bugs": {
-    "url": "https://github.com/joaopaulomoraes/reactjs-vite-tailwindcss-boilerplate/issues",
-    "email": "joaopaulomoraes@outlook.com"
+    "url": "https://github.com/ghannodahn/TODD/issues",
+    "email": "joemu@bassicnerd.com"
   },
   "scripts": {
     "dev": "vite",
