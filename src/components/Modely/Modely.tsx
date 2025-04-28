@@ -99,7 +99,7 @@ const ToddComponentViewer = () => {
       try {
         // Adjust the path to your JSON file as needed
         // Using fetch is generally more flexible than direct import
-        const response = await fetch('/src/data/todd-components.json') // Or the correct relative/absolute path
+        const response = await fetch('/TODD/data/todd-components.json') // Or the correct relative/absolute path
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`)
         }
