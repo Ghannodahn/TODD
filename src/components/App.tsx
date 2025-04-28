@@ -1,12 +1,11 @@
-import logo from 'assets/logo.svg'
+import Header from './Header/Header'
+import Home from './Home/Home'
 
 function App() {
   return (
     <div className="app">
-      <div className="header">Hello World!</div>
-      <div className="content">
-        <img src={logo} />
-      </div>
+      <Header /> {/* Use the Header component */}
+      <Home />
     </div>
   )
 }
