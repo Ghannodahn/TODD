@@ -16,7 +16,7 @@ const Content: React.FC<ContentProps> = ({ currentView }) => {
       return <ToddComponentViewer />
     case 'chat':
       // Placeholder for Chat component
-      return <div>Chat Component Placeholder</div>
+      return <div>Chat Component Placeholder - Coming Soon!</div>
     case 'results':
       // Placeholder for Results component
       return <div>Results Component Placeholder</div>
