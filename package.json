@@ -22,7 +22,7 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "typecheck": "tsc --noEmit",
-    "deploy": "pnpm run build && gh-pages -d TODD -m \"Deploy gh-pages [ci skip]\""
+    "deploy": "pnpm run build && gh-pages -d TODD -m \"Deploy gh-pages\""
   },
   "dependencies": {
     "lucide-react": "^0.503.0",

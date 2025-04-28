@@ -35,6 +35,12 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
+      - name: Set up Git authentication
+        env:
+            GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run:
+          git config --global url."https://x-access-token:${GH_TOKEN}@github.com".insteadOf "https://github.com"
+
       - name: Run Deploy Script
         # The GITHUB_TOKEN is automatically available to the script
         # when run within GitHub Actions with appropriate permissions.
