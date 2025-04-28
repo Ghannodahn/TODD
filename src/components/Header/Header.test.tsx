@@ -1,16 +1,19 @@
 import { render, screen } from '@testing-library/react'
 import { describe, it, expect } from 'vitest'
 import Header from './Header'
+import { useState } from 'react'
 
 describe('Header Component', () => {
+  const [, setCurrentView] = useState<string>('home')
+
   it('should render the header component without crashing', () => {
-    render(<Header />)
+    render(<Header setCurrentView={setCurrentView} />)
     const headerElement = screen.getByRole('banner') // The <header> tag has an implicit role of 'banner'
     expect(headerElement).toBeInTheDocument()
   })
 
   it('should display the title "TODD Explorer"', () => {
-    render(<Header />)
+    render(<Header setCurrentView={setCurrentView} />)
     // Find the element containing the title text
     const titleElement = screen.getByText('TODD Explorer')
     expect(titleElement).toBeInTheDocument()
@@ -19,7 +22,7 @@ describe('Header Component', () => {
   })
 
   it('should display all navigation links', () => {
-    render(<Header />)
+    render(<Header setCurrentView={setCurrentView} />)
     // Check for each navigation link by its text content using accessible role 'link'
     expect(screen.getByRole('link', { name: /home/i })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /chat/i })).toBeInTheDocument()
@@ -28,7 +31,7 @@ describe('Header Component', () => {
   })
 
   it('should have placeholder href attributes for navigation links', () => {
-    render(<Header />)
+    render(<Header setCurrentView={setCurrentView} />)
     // Verify the href attribute for each link
     expect(screen.getByRole('link', { name: /home/i })).toHaveAttribute(
       'href',
