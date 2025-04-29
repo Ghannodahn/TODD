@@ -19,16 +19,24 @@ type PositionsMap = {
 }
 
 // --- NEW: Function to calculate initial layout ---
-async function calculateInitialLayout(
+async function applyLayout(
   m1Components: { id: string }[],
   m2Components: { id: string }[],
   layoutFilePath: string
 ): Promise<PositionsMap> {
   const initialPositions: PositionsMap = {}
 
+  // Combine all components into a single array with version information
+  const allComponents = [
+    ...m1Components.map((comp) => ({ ...comp, version: 'm1' })),
+    ...m2Components
+      .filter((m2c) => !m1Components.some((m1c) => m1c.id === m2c.id))
+      .map((comp) => ({ ...comp, version: 'm2-only' }))
+  ]
+
   // Helper function for circular layout (kept local as it's specific to this calculation)
   const positionComponentsInCircle = (
-    componentsToPosition: { id: string }[],
+    componentsToPosition: { id: string; version?: string }[],
     centerX: number,
     centerY: number,
     radius: number
@@ -49,55 +57,52 @@ async function calculateInitialLayout(
     })
   }
 
-  // --- START: Load and apply M1 layout ---
+  // Try to load layout data
+  let layoutData = null
   try {
-    const layoutResponse = await fetch(layoutFilePath) // Fetch layout using provided path
+    const layoutResponse = await fetch(layoutFilePath)
     if (!layoutResponse.ok) {
       throw new Error(`HTTP error loading layout: ${layoutResponse.status}`)
     }
-    const m1LayoutData = await layoutResponse.json()
+    layoutData = await layoutResponse.json()
+  } catch (layoutError) {
+    console.error('Failed to load layout data:', layoutError)
+  }
 
-    // Apply layout positions for M1 components found in the layout file
-    for (const componentId in m1LayoutData) {
-      if (Object.prototype.hasOwnProperty.call(m1LayoutData, componentId)) {
-        // Check if this component actually exists in the provided M1 list
-        if (m1Components.some((c: { id: string }) => c.id === componentId)) {
-          initialPositions[componentId] = { ...m1LayoutData[componentId] } // Use spread for clean copy
-        } else {
-          // Log if layout specifies a component not in the current M1 list
-          console.warn(
-            `Layout data found for M1 component "${componentId}" but it's not present in the current M1 component list.`
-          )
-        }
+  // Process all components in a single pass
+  const unpositionedM1Components = []
+  const m2OnlyComponents = []
+
+  // First pass: Apply layout positions from file if available
+  for (const component of allComponents) {
+    const componentId = component.id
+
+    // If layout data exists and has this component, use that position
+    if (layoutData && layoutData[componentId]) {
+      initialPositions[componentId] = { ...layoutData[componentId] }
+    }
+    // Otherwise, categorize for fallback positioning
+    else {
+      if (component.version === 'm1') {
+        unpositionedM1Components.push(component)
+      } else if (component.version === 'm2-only') {
+        m2OnlyComponents.push(component)
       }
     }
-  } catch (layoutError) {
-    console.error('Failed to load or apply M1 layout data:', layoutError)
-    // M1 components might remain unpositioned if layout loading fails.
-    // Consider adding fallback positioning here if needed.
   }
-  // --- END: Load and apply M1 layout ---
 
-  // Position M2-only components separately (if they weren't positioned by the layout)
-  const m2OnlyComponents = m2Components.filter(
-    (m2c: { id: string }) =>
-      !m1Components.some((m1c: { id: string }) => m1c.id === m2c.id) &&
-      !initialPositions[m2c.id] // Only position if not already placed by layout
-  )
-  // Position them offset from the typical center (adjust coordinates as needed)
-  positionComponentsInCircle(m2OnlyComponents, 700, 300, 150)
-
-  // Fallback: Position any remaining M1 components that weren't in the layout file
-  const unpositionedM1Components = m1Components.filter(
-    (m1c) => !initialPositions[m1c.id]
-  )
+  // Apply fallback positioning for components not in the layout
   if (unpositionedM1Components.length > 0) {
     console.warn(
       'Some M1 components were not found in the layout file, applying circular fallback.',
       unpositionedM1Components.map((c) => c.id)
     )
-    // Position them near the default center, perhaps slightly offset
     positionComponentsInCircle(unpositionedM1Components, 400, 300, 250)
+  }
+
+  // Position M2-only components separately
+  if (m2OnlyComponents.length > 0) {
+    positionComponentsInCircle(m2OnlyComponents, 700, 300, 150)
   }
 
   return initialPositions
@@ -108,16 +113,17 @@ const ToddComponentViewer = () => {
   const [componentData, setComponentData] = useState({
     components: { m1: [], m2: [] },
     typeMapping: {},
+    positions: {},
     subjectAreas: {}
   })
   const [isLoading, setIsLoading] = useState(true) // Add loading state
   const [, setError] = useState<string | null>(null) // Add error state
 
   // Active version state (m1 or m2)
-  const [activeVersion, setActiveVersion] = useState('m1')
+  const [activeVersion, setActiveVersion] = useState('m2') // Change default from 'm1' to 'm2'
 
   // Active subject area (all, arena, optimizer)
-  const [activeSubjectArea, setActiveSubjectArea] = useState('all')
+  const [activeSubjectArea, setActiveSubjectArea] = useState('arena') // Change default from 'all' to 'arena'
 
   // Track positions of components
   const [positions, setPositions] = useState<PositionsMap>({}) // Use PositionsMap type
@@ -206,19 +212,20 @@ const ToddComponentViewer = () => {
         )
         const subjectAreas = defineSubjectAreas(uniqueComponents)
 
-        // 3. Set Component Data State
-        setComponentData({
-          components: data.components, // Store original m1/m2 structure
-          typeMapping: data.typeMapping,
-          subjectAreas
-        })
-
-        // 4. Calculate Initial Layout using the new function
-        const initialPositions = await calculateInitialLayout(
+        // 3. Calculate Initial Layout using the new function
+        const initialPositions = await applyLayout(
           data.components.m1,
           data.components.m2,
           '/TODD/data/todd-arena-m1.layout.json' // Pass layout file path
         )
+
+        // 4. Set Component Data State
+        setComponentData({
+          components: data.components, // Store original m1/m2 structure
+          typeMapping: data.typeMapping,
+          positions: initialPositions,
+          subjectAreas
+        })
 
         // 5. Set Positions State
         setPositions(initialPositions)
@@ -351,26 +358,11 @@ const ToddComponentViewer = () => {
   const handleMouseUp = (e: MouseEvent | React.MouseEvent<SVGSVGElement>) => {
     // Type the event
     if (draggingId) {
-      // If we didn2't drag (just clicked), select the component
+      // If we didn't drag (just clicked), select the component
       if (!isDragging) {
-        // Check if the event target is actually the component or its child
-        // This prevents deselecting when clicking slightly off during a non-drag click
-        let targetElement = e.target as Element
-        let componentId = null
-        while (targetElement && targetElement !== svgRef.current) {
-          if (
-            targetElement.tagName === 'g' &&
-            targetElement.getAttribute('key')
-          ) {
-            componentId = targetElement.getAttribute('key')
-            break
-          }
-          targetElement = targetElement.parentElement as Element
-        }
-        // Only select if the click ended on the component we started dragging
-        if (componentId === draggingId) {
-          handleComponentSelect(draggingId, e as React.MouseEvent<SVGGElement>) // Pass event for shiftKey check
-        }
+        // Simply select the component we started dragging
+        console.log('Selecting component after click:', draggingId)
+        handleComponentSelect(draggingId, e as React.MouseEvent<SVGGElement>)
       }
 
       // Reset dragging state
@@ -406,11 +398,8 @@ const ToddComponentViewer = () => {
       )
     }
 
-    // Then filter by subject area if not viewing all
-    if (
-      activeSubjectArea !== 'all' &&
-      componentData.subjectAreas[activeSubjectArea]
-    ) {
+    // Filter by subject area (since 'all' is removed, we always filter)
+    if (componentData.subjectAreas[activeSubjectArea]) {
       const areaComponentIds = new Set(
         componentData.subjectAreas[activeSubjectArea].components
       )
@@ -449,6 +438,7 @@ const ToddComponentViewer = () => {
           return []
         } else {
           // Select only this component
+          console.log('showing component ' + componentId)
           return [componentId]
         }
       }
@@ -585,18 +575,20 @@ const ToddComponentViewer = () => {
   // Handle version change
   const handleVersionChange = (version) => {
     setActiveVersion(version)
-    //resetPositionsForCurrentSelection()
+    console.log('Setting positions.')
+    console.log(positions)
+    setPositions(componentData.positions)
   }
 
   // Handle subject area change
   const handleSubjectAreaChange = (area) => {
     setActiveSubjectArea(area)
-    //resetPositionsForCurrentSelection()
+    setPositions(componentData.positions)
   }
 
   // Reset positions
   const resetPositionsForCurrentSelection = () => {
-    applyLayout()
+    setPositions(componentData.positions)
   }
 
   // Reset positions
@@ -664,8 +656,9 @@ const ToddComponentViewer = () => {
   // Handle background click to deselect
   const handleBackgroundClick = (e) => {
     // Only handle direct clicks on the SVG background, not on components
-    if (e.target === svgRef.current) {
+    if (e.target === e.currentTarget) {
       setSelectedComponent(null)
+      setSelectedComponents([])
     }
   }
 
@@ -720,40 +713,6 @@ const ToddComponentViewer = () => {
 
         {/* Grid background */}
         {snapToGrid && <rect width="800" height="600" fill="url(#grid)" />}
-
-        {/* Subject area background highlight */}
-        {activeSubjectArea !== 'all' && (
-          <rect
-            x="50"
-            y="50"
-            width="700"
-            height="500"
-            rx="20"
-            ry="20"
-            fill={
-              activeSubjectArea === 'arena'
-                ? 'rgba(76, 175, 80, 0.1)'
-                : 'rgba(255, 152, 0, 0.1)'
-            }
-            stroke={activeSubjectArea === 'arena' ? '#4CAF50' : '#FF9800'}
-            strokeWidth="1"
-            strokeDasharray="5,3"
-          />
-        )}
-
-        {/* Subject area title */}
-        {activeSubjectArea !== 'all' &&
-          componentData.subjectAreas[activeSubjectArea] && (
-            <text
-              x="80"
-              y="80"
-              fontWeight="bold"
-              fontSize="18"
-              fill={activeSubjectArea === 'arena' ? '#4CAF50' : '#FF9800'}
-            >
-              {componentData.subjectAreas[activeSubjectArea].name}
-            </text>
-          )}
 
         {/* Render connections first */}
         {activeComponents.map((component) => {
@@ -854,17 +813,23 @@ const ToddComponentViewer = () => {
           return (
             <g
               key={component.id}
+              data-component-id={component.id}
               transform={`translate(${pos.x}, ${pos.y})`}
               onMouseDown={(e) => {
                 // If it's not a right-click, handle as drag
                 if (e.button !== 2) {
                   handleMouseDown(e, component.id)
-
                   // Prevent default to avoid text selection
                   e.preventDefault()
                 }
               }}
-              // Removed onClick handler - selection now happens on mouseUp if no drag occurred
+              onClick={(e) => {
+                // Add direct click handler
+                e.stopPropagation() // Prevent bubbling to background
+                //if (!isDragging) {
+                //  handleComponentSelect(component.id, e)
+                //}
+              }}
               onMouseEnter={() => handleComponentHover(component.id)}
               onMouseLeave={handleComponentHoverEnd}
               style={{
@@ -998,14 +963,6 @@ const ToddComponentViewer = () => {
 
         {/* Subject Area Selector */}
         <div className="mt-2 flex space-x-2">
-          <button
-            className={`rounded px-3 py-1 text-sm ${
-              activeSubjectArea === 'all' ? 'bg-purple-600' : 'bg-gray-600'
-            }`}
-            onClick={() => handleSubjectAreaChange('all')}
-          >
-            All Components
-          </button>
           <button
             className={`rounded px-3 py-1 text-sm ${
               activeSubjectArea === 'arena' ? 'bg-green-600' : 'bg-gray-600'

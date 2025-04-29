@@ -64,14 +64,14 @@
         "name": "GPT Solution",
         "type": "Solution",
         "description": "Evolved from M1 Solutions, specifically GPT Solutions (Claude 3.7, ChatGPT 4o, Gemini 2.0, and Perplexity).",
-        "connections": ["arena", "challenge", "optimizer"]
+        "connections": ["solution"]
       },
       {
         "id": "toolSolution",
         "name": "Tool Solution",
         "type": "Solution",
         "description": "A non-AI solution to a problem.",
-        "connections": ["arena", "challenge", "optimizer"]
+        "connections": ["solution"]
       },
       {
         "id": "recommender",
