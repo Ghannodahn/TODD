@@ -1,40 +1,150 @@
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 //@ts-nocheck
 
 import React, { useState, useEffect, useRef } from 'react'
+// Assuming you placed the json file in src/data/
+// If your build setup supports direct JSON imports:
+// import initialData from '../../data/todd-components.json'
+
+// Define a type for position data for better clarity
+type Position = {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+type PositionsMap = {
+  [key: string]: Position
+}
+
+// --- NEW: Function to calculate initial layout ---
+async function applyLayout(
+  m1Components: { id: string }[],
+  m2Components: { id: string }[],
+  layoutFilePath: string
+): Promise<PositionsMap> {
+  const initialPositions: PositionsMap = {}
+
+  // Combine all components into a single array with version information
+  const allComponents = [
+    ...m1Components.map((comp) => ({ ...comp, version: 'm1' })),
+    ...m2Components
+      .filter((m2c) => !m1Components.some((m1c) => m1c.id === m2c.id))
+      .map((comp) => ({ ...comp, version: 'm2-only' }))
+  ]
+
+  // Helper function for circular layout (kept local as it's specific to this calculation)
+  const positionComponentsInCircle = (
+    componentsToPosition: { id: string; version?: string }[],
+    centerX: number,
+    centerY: number,
+    radius: number
+  ) => {
+    const angleStep = (2 * Math.PI) / (componentsToPosition.length || 1) // Avoid division by zero
+
+    componentsToPosition.forEach((component, index) => {
+      if (!initialPositions[component.id]) {
+        // Avoid overwriting if already positioned
+        const angle = index * angleStep
+        initialPositions[component.id] = {
+          x: centerX + radius * Math.cos(angle),
+          y: centerY + radius * Math.sin(angle),
+          width: 140, // Default width
+          height: 80 // Default height
+        }
+      }
+    })
+  }
+
+  // Try to load layout data
+  let layoutData = null
+  try {
+    const layoutResponse = await fetch(layoutFilePath)
+    if (!layoutResponse.ok) {
+      throw new Error(`HTTP error loading layout: ${layoutResponse.status}`)
+    }
+    layoutData = await layoutResponse.json()
+  } catch (layoutError) {
+    console.error('Failed to load layout data:', layoutError)
+  }
+
+  // Process all components in a single pass
+  const unpositionedM1Components = []
+  const m2OnlyComponents = []
+
+  // First pass: Apply layout positions from file if available
+  for (const component of allComponents) {
+    const componentId = component.id
+
+    // If layout data exists and has this component, use that position
+    if (layoutData && layoutData[componentId]) {
+      initialPositions[componentId] = { ...layoutData[componentId] }
+    }
+    // Otherwise, categorize for fallback positioning
+    else {
+      if (component.version === 'm1') {
+        unpositionedM1Components.push(component)
+      } else if (component.version === 'm2-only') {
+        m2OnlyComponents.push(component)
+      }
+    }
+  }
+
+  // Apply fallback positioning for components not in the layout
+  if (unpositionedM1Components.length > 0) {
+    console.warn(
+      'Some M1 components were not found in the layout file, applying circular fallback.',
+      unpositionedM1Components.map((c) => c.id)
+    )
+    positionComponentsInCircle(unpositionedM1Components, 400, 300, 250)
+  }
+
+  // Position M2-only components separately
+  if (m2OnlyComponents.length > 0) {
+    positionComponentsInCircle(m2OnlyComponents, 700, 300, 150)
+  }
+
+  return initialPositions
+} // --- END: New layout function ---
 
 const ToddComponentViewer = () => {
   // Component definitions will be loaded from the JSON data
   const [componentData, setComponentData] = useState({
     components: { m1: [], m2: [] },
     typeMapping: {},
+    positions: {},
     subjectAreas: {}
   })
+  const [isLoading, setIsLoading] = useState(true) // Add loading state
+  const [, setError] = useState<string | null>(null) // Add error state
 
   // Active version state (m1 or m2)
-  const [activeVersion, setActiveVersion] = useState('m1')
+  const [activeVersion, setActiveVersion] = useState('m2') // Change default from 'm1' to 'm2'
 
   // Active subject area (all, arena, optimizer)
-  const [activeSubjectArea, setActiveSubjectArea] = useState('all')
+  const [activeSubjectArea, setActiveSubjectArea] = useState('arena') // Change default from 'all' to 'arena'
 
   // Track positions of components
-  const [positions, setPositions] = useState({})
+  const [positions, setPositions] = useState<PositionsMap>({}) // Use PositionsMap type
 
   // Track which component is being dragged
-  const [draggingId, setDraggingId] = useState(null)
+  const [draggingId, setDraggingId] = useState<string | null>(null) // Explicit type
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
 
   // Interactive states
-  const [selectedComponent, setSelectedComponent] = useState(null)
-  const [hoveredComponent, setHoveredComponent] = useState(null)
+  const [selectedComponent, setSelectedComponent] = useState<string | null>(
+    null
+  ) // Explicit type
+  const [hoveredComponent, setHoveredComponent] = useState<string | null>(null) // Explicit type
   const [showConnectionsOnly, setShowConnectionsOnly] = useState(false)
-  const [zoomLevel, setZoomLevel] = useState(1)
 
   // Ref for the SVG element
-  const svgRef = useRef(null)
+  const svgRef = useRef<SVGSVGElement>(null) // Type the ref
 
   // Define subject areas
-  const defineSubjectAreas = (components) => {
+  const defineSubjectAreas = (components: { id: string }[]) => {
+    // Consider defining a Component type
     // Arena subject area includes Arena and directly connected components
     // excluding Optimizer and its direct connections
     const arenaArea = {
@@ -82,230 +192,56 @@ const ToddComponentViewer = () => {
     }
   }
 
-  // Load component definitions
+  // Load component definitions and calculate initial layout
   useEffect(() => {
-    // This would normally fetch from a file, but we'll embed the data directly
-    const data = {
-      components: {
-        m1: [
-          {
-            id: 'arena',
-            name: 'Arena',
-            type: 'Environment',
-            description:
-              'The component used to pit solutions against each other in Challenges. Provides the environment where solutions compete.',
-            connections: ['challenge', 'solution', 'watcher', 'judge']
-          },
-          {
-            id: 'challenge',
-            name: 'Challenge',
-            type: 'Specification',
-            description:
-              "A mechanism for comparing solutions' performance. Provides context up front (including prompts, attached information), may allow or restrict access to tools and services, and has clear expectations for results.",
-            connections: ['arena', 'solution']
-          },
-          {
-            id: 'solution',
-            name: 'Solution',
-            type: 'Varies',
-            description:
-              'Represents a means of solving a challenge. Initial implementation presents each AI release (Claude 3.7, ChatGPT 4o, Gemini 2.0, and Perplexity) as a Solution.',
-            connections: ['arena', 'challenge']
-          },
-          {
-            id: 'watcher',
-            name: 'Watcher',
-            type: 'Agent',
-            description: 'Observes a challenge and records the results.',
-            connections: ['arena', 'conclusion']
-          },
-          {
-            id: 'judge',
-            name: 'Judge',
-            type: 'Agent',
-            description:
-              'Measures various aspects of the result including speed, accuracy, and aesthetics. Declares the "winner" and provides context for the decision.',
-            connections: ['arena', 'conclusion']
-          },
-          {
-            id: 'conclusion',
-            name: 'Conclusion',
-            type: 'Data',
-            description: "A final summary of the Judge(s)' findings.",
-            connections: ['watcher', 'judge', 'library']
-          },
-          {
-            id: 'library',
-            name: 'Library',
-            type: 'Data',
-            description:
-              'Stores information on Solutions, Challenges, Results, and Conclusions.',
-            connections: ['conclusion', 'showman']
-          },
-          {
-            id: 'showman',
-            name: 'Showman',
-            type: 'Frontend',
-            description:
-              'A website that allows browsing and defining challenges. Its UX should feel like an RPG game with the Solutions presented as characters with attributes and stats.',
-            connections: ['library']
-          }
-        ],
-        m2: [
-          {
-            id: 'gptSolution',
-            name: 'GPT Solution',
-            type: 'Solution',
-            description:
-              'Evolved from M1 Solutions, specifically GPT Solutions (Claude 3.7, ChatGPT 4o, Gemini 2.0, and Perplexity).',
-            connections: ['arena', 'challenge', 'optimizer']
-          },
-          {
-            id: 'toolSolution',
-            name: 'Tool Solution',
-            type: 'Solution',
-            description: 'A non-AI solution to a problem.',
-            connections: ['arena', 'challenge', 'optimizer']
-          },
-          {
-            id: 'recommender',
-            name: 'Recommender',
-            type: 'Agent',
-            description:
-              'Responsible for proactively identifying the best solution for a task.',
-            connections: ['challenge', 'gptSolution', 'toolSolution']
-          },
-          {
-            id: 'optimizer',
-            name: 'Optimizer',
-            type: 'Agent',
-            description:
-              'Responsible for imagining and designing improvements to a solution. May include fine-tuning, distilled models, existing tooling, and/or authoring new tools.',
-            connections: [
-              'gptSolution',
-              'toolSolution',
-              'prompty',
-              'tuner',
-              'distiller',
-              'integrator',
-              'engineer'
-            ]
-          },
-          {
-            id: 'prompty',
-            name: 'Prompty',
-            type: 'Agent',
-            description:
-              'Rewrites a Challenge (including but not limited to prompts) based on a spec from Optimizer.',
-            connections: ['optimizer', 'challenge']
-          },
-          {
-            id: 'tuner',
-            name: 'Tuner',
-            type: 'Agent',
-            description: 'Provides a fine-tuned version of a model.',
-            connections: ['optimizer', 'gptSolution']
-          },
-          {
-            id: 'distiller',
-            name: 'Distiller',
-            type: 'Agent',
-            description:
-              'Produces a distilled model more optimized to a challenge or set of challenges.',
-            connections: ['optimizer', 'gptSolution']
-          },
-          {
-            id: 'integrator',
-            name: 'Integrator',
-            type: 'Agent',
-            description: 'Uses existing tooling.',
-            connections: ['optimizer', 'toolSolution']
-          },
-          {
-            id: 'engineer',
-            name: 'Engineer',
-            type: 'Agent',
-            description: 'Creates new tooling.',
-            connections: ['optimizer', 'toolSolution']
-          }
-        ]
-      },
-      typeMapping: {
-        Environment: {
-          color: '#4CAF50',
-          icon: 'environment'
-        },
-        Specification: {
-          color: '#2196F3',
-          icon: 'specification'
-        },
-        Varies: {
-          color: '#9C27B0',
-          icon: 'varies'
-        },
-        Solution: {
-          color: '#9C27B0',
-          icon: 'solution'
-        },
-        Agent: {
-          color: '#FF9800',
-          icon: 'agent'
-        },
-        Data: {
-          color: '#795548',
-          icon: 'data'
-        },
-        Frontend: {
-          color: '#E91E63',
-          icon: 'frontend'
+    const fetchDataAndLayout = async () => {
+      setIsLoading(true)
+      setError(null)
+      try {
+        // 1. Fetch main component data
+        const response = await fetch('/TODD/data/todd-components.json') // Or the correct relative/absolute path
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
         }
+        const data = await response.json()
+
+        // 2. Define Subject Areas (needs all components)
+        const allComponents = [...data.components.m1, ...data.components.m2]
+        const uniqueComponents = Array.from(
+          new Map(allComponents.map((item) => [item.id, item])).values()
+        )
+        const subjectAreas = defineSubjectAreas(uniqueComponents)
+
+        // 3. Calculate Initial Layout using the new function
+        const initialPositions = await applyLayout(
+          data.components.m1,
+          data.components.m2,
+          '/TODD/data/todd-arena-m1.layout.json' // Pass layout file path
+        )
+
+        // 4. Set Component Data State
+        setComponentData({
+          components: data.components, // Store original m1/m2 structure
+          typeMapping: data.typeMapping,
+          positions: initialPositions,
+          subjectAreas
+        })
+
+        // 5. Set Positions State
+        setPositions(initialPositions)
+      } catch (e: unknown) {
+        console.error('Failed to load component data or calculate layout:', e)
+        setError(
+          `Failed to load data or layout: ${
+            e instanceof Error ? e.message : String(e)
+          }`
+        )
+      } finally {
+        setIsLoading(false)
       }
     }
-
-    // Define subject areas
-    const allComponents = [...data.components.m1, ...data.components.m2]
-    const subjectAreas = defineSubjectAreas(allComponents)
-
-    setComponentData({
-      ...data,
-      subjectAreas
-    })
-
-    // Initialize positions in a circular layout for each subject area
-    const initialPositions = {}
-
-    // Position components in a circle
-    const positionComponentsInCircle = (
-      components,
-      centerX,
-      centerY,
-      radius
-    ) => {
-      const angleStep = (2 * Math.PI) / components.length
-
-      components.forEach((component, index) => {
-        const angle = index * angleStep
-        initialPositions[component.id] = {
-          x: centerX + radius * Math.cos(angle),
-          y: centerY + radius * Math.sin(angle),
-          width: 140,
-          height: 80
-        }
-      })
-    }
-
-    // Position M1 components in a circle
-    positionComponentsInCircle(data.components.m1, 400, 300, 200)
-
-    // Position M2-only components in a separate area
-    const m2OnlyComponents = data.components.m2.filter(
-      (c) => !data.components.m1.some((m1c) => m1c.id === c.id)
-    )
-
-    positionComponentsInCircle(m2OnlyComponents, 700, 300, 150)
-
-    setPositions(initialPositions)
-  }, [])
+    fetchDataAndLayout()
+  }, []) // Keep dependency array empty as it runs once on mount
 
   // Grid snapping settings
   const [snapToGrid, setSnapToGrid] = useState(true)
@@ -316,19 +252,26 @@ const ToddComponentViewer = () => {
   const dragStartPos = useRef({ x: 0, y: 0 })
 
   // Handle mouse down for dragging
-  const handleMouseDown = (e, id) => {
+  const handleMouseDown = (e: React.MouseEvent<SVGGElement>, id: string) => {
+    // Type the event
     const svg = svgRef.current
     if (!svg) return
 
-    const pt = svg.createSVGPoint()
-    pt.x = e.clientX
-    pt.y = e.clientY
-    const svgP = pt.matrixTransform(svg.getScreenCTM().inverse())
+    // Use getBoundingClientRect for more reliable coordinates relative to viewport
+    const CTM = svg.getScreenCTM()
+    if (!CTM) return
+
+    const svgP = {
+      x: (e.clientX - CTM.e) / CTM.a,
+      y: (e.clientY - CTM.f) / CTM.d
+    }
 
     // Save initial position for determining whether a drag occurred
     dragStartPos.current = { x: e.clientX, y: e.clientY }
 
     const pos = positions[id]
+    if (!pos) return // Check if position exists
+
     setDraggingId(id)
     setIsDragging(false) // Reset drag state
     setDragOffset({
@@ -338,22 +281,27 @@ const ToddComponentViewer = () => {
   }
 
   // Handle mouse move for dragging
-  const handleMouseMove = (e) => {
-    if (draggingId && svgRef.current) {
+  const handleMouseMove = (e: MouseEvent) => {
+    // Use global MouseEvent type
+    if (draggingId && svgRef.current && positions[draggingId]) {
+      // Check position exists
       // Calculate distance moved to determine if we're dragging
       const dx = Math.abs(e.clientX - dragStartPos.current.x)
       const dy = Math.abs(e.clientY - dragStartPos.current.y)
 
       // If moved more than 3 pixels, consider it a drag
-      if (dx > 3 || dy > 3) {
+      if (!isDragging && (dx > 3 || dy > 3)) {
         setIsDragging(true)
       }
 
       const svg = svgRef.current
-      const pt = svg.createSVGPoint()
-      pt.x = e.clientX
-      pt.y = e.clientY
-      const svgP = pt.matrixTransform(svg.getScreenCTM().inverse())
+      const CTM = svg.getScreenCTM()
+      if (!CTM) return
+
+      const svgP = {
+        x: (e.clientX - CTM.e) / CTM.a,
+        y: (e.clientY - CTM.f) / CTM.d
+      }
 
       let newX = svgP.x + dragOffset.x
       let newY = svgP.y + dragOffset.y
@@ -364,54 +312,57 @@ const ToddComponentViewer = () => {
         newY = Math.round(newY / gridSize) * gridSize
       }
 
-      // Create new positions object
-      const newPositions = { ...positions }
+      // Create new positions object immutably
+      setPositions((prevPositions) => {
+        const newPositions = { ...prevPositions }
+        const currentComponentPos = newPositions[draggingId]
 
-      // If we're dragging a component that's in the selection
-      if (selectedComponents.includes(draggingId)) {
-        // Move all selected components by the same delta
-        const currentComponent = positions[draggingId]
-        const deltaX = newX - currentComponent.x
-        const deltaY = newY - currentComponent.y
+        // If we're dragging a component that's in the selection
+        if (selectedComponents.includes(draggingId)) {
+          const deltaX = newX - currentComponentPos.x
+          const deltaY = newY - currentComponentPos.y
 
-        // Update all selected components
-        selectedComponents.forEach((id) => {
-          if (newPositions[id]) {
-            let updatedX = newPositions[id].x + deltaX
-            let updatedY = newPositions[id].y + deltaY
+          // Update all selected components
+          selectedComponents.forEach((id) => {
+            if (newPositions[id]) {
+              let updatedX = newPositions[id].x + deltaX
+              let updatedY = newPositions[id].y + deltaY
 
-            // Apply grid snapping if enabled
-            if (snapToGrid) {
-              updatedX = Math.round(updatedX / gridSize) * gridSize
-              updatedY = Math.round(updatedY / gridSize) * gridSize
+              // Apply grid snapping if enabled
+              if (snapToGrid) {
+                updatedX = Math.round(updatedX / gridSize) * gridSize
+                updatedY = Math.round(updatedY / gridSize) * gridSize
+              }
+
+              newPositions[id] = {
+                ...newPositions[id],
+                x: updatedX,
+                y: updatedY
+              }
             }
-
-            newPositions[id] = {
-              ...newPositions[id],
-              x: updatedX,
-              y: updatedY
-            }
+          })
+        } else {
+          // Just move the dragged component
+          newPositions[draggingId] = {
+            ...currentComponentPos,
+            x: newX,
+            y: newY
           }
-        })
-      } else {
-        // Just move the dragged component
-        newPositions[draggingId] = {
-          ...newPositions[draggingId],
-          x: newX,
-          y: newY
         }
-      }
-
-      setPositions(newPositions)
+        return newPositions
+      })
     }
   }
 
   // Handle mouse up to end dragging
-  const handleMouseUp = (e) => {
+  const handleMouseUp = (e: MouseEvent | React.MouseEvent<SVGSVGElement>) => {
+    // Type the event
     if (draggingId) {
       // If we didn't drag (just clicked), select the component
       if (!isDragging) {
-        handleComponentSelect(draggingId)
+        // Simply select the component we started dragging
+        console.log('Selecting component after click:', draggingId)
+        handleComponentSelect(draggingId, e as React.MouseEvent<SVGGElement>)
       }
 
       // Reset dragging state
@@ -422,71 +373,102 @@ const ToddComponentViewer = () => {
 
   // Get all active components based on the current version and subject area
   const getActiveComponents = () => {
-    let components = []
+    // Ensure componentData is loaded
+    if (
+      isLoading ||
+      !componentData.components.m1 ||
+      !componentData.components.m2
+    ) {
+      return []
+    }
+
+    let baseComponents = []
 
     // First, get components based on version
     if (activeVersion === 'm1') {
-      components = componentData.components.m1
+      baseComponents = componentData.components.m1
     } else {
-      // For M2, we include both M1 and M2 components
-      components = [
+      // For M2, combine M1 and M2, ensuring uniqueness by ID
+      const combined = [
         ...componentData.components.m1,
         ...componentData.components.m2
       ]
+      baseComponents = Array.from(
+        new Map(combined.map((item) => [item.id, item])).values()
+      )
     }
 
-    // Then filter by subject area if not viewing all
-    if (
-      activeSubjectArea !== 'all' &&
-      componentData.subjectAreas[activeSubjectArea]
-    ) {
-      const areaComponentIds =
+    // Filter by subject area (since 'all' is removed, we always filter)
+    if (componentData.subjectAreas[activeSubjectArea]) {
+      const areaComponentIds = new Set(
         componentData.subjectAreas[activeSubjectArea].components
-      components = components.filter((c) => areaComponentIds.includes(c.id))
+      )
+      return baseComponents.filter((c) => areaComponentIds.has(c.id))
     }
 
-    return components
+    return baseComponents
   }
 
   // Track multiple selected components
-  const [selectedComponents, setSelectedComponents] = useState([])
+  const [selectedComponents, setSelectedComponents] = useState<string[]>([]) // Explicit type
 
   // Handle component selection
-  const handleComponentSelect = (componentId) => {
-    if (window.event.shiftKey) {
-      // Multi-select with Shift key
-      if (selectedComponents.includes(componentId)) {
-        // If already selected, remove it
-        setSelectedComponents(
-          selectedComponents.filter((id) => id !== componentId)
-        )
-      } else {
-        // Add to selection
-        setSelectedComponents([...selectedComponents, componentId])
-      }
-    } else {
-      // Single select without Shift
-      if (
-        selectedComponents.length === 1 &&
-        selectedComponents[0] === componentId
-      ) {
-        // Deselect if already the only selected
-        setSelectedComponents([])
-      } else {
-        // Select only this component
-        setSelectedComponents([componentId])
-      }
-    }
+  const handleComponentSelect = (
+    componentId: string,
+    e?: React.MouseEvent<SVGGElement>
+  ) => {
+    // Accept optional event
+    const isShiftPressed =
+      e?.shiftKey || (typeof window !== 'undefined' && window.event?.shiftKey) // Check shift key safely
 
-    // For backward compatibility, also set the selectedComponent for detail view
-    // Only show details for a single component
-    if (!window.event.shiftKey || selectedComponents.length === 0) {
-      setSelectedComponent(componentId)
+    setSelectedComponents((prevSelected) => {
+      if (isShiftPressed) {
+        // Multi-select with Shift key
+        if (prevSelected.includes(componentId)) {
+          // If already selected, remove it
+          return prevSelected.filter((id) => id !== componentId)
+        } else {
+          // Add to selection
+          return [...prevSelected, componentId]
+        }
+      } else {
+        // Single select without Shift
+        if (prevSelected.length === 1 && prevSelected[0] === componentId) {
+          // Deselect if already the only selected
+          return []
+        } else {
+          // Select only this component
+          console.log('showing component ' + componentId)
+          return [componentId]
+        }
+      }
+    })
+
+    // Update single selected component for detail view only on single select actions
+    if (!isShiftPressed) {
+      setSelectedComponent((prev) =>
+        prev === componentId ? null : componentId
+      )
+    } else {
+      // If shift-clicking and nothing ends up selected, clear the detail view
+      setSelectedComponents((currentSelected) => {
+        if (currentSelected.length === 0) {
+          setSelectedComponent(null)
+        } else if (currentSelected.length === 1) {
+          // If only one remains after shift-click, show its details
+          setSelectedComponent(currentSelected[0])
+        } else {
+          // If multiple are selected, clear the single detail view
+          setSelectedComponent(null)
+        }
+        return currentSelected // Return unchanged list for this check
+      })
     }
   }
 
   // Handle component hover
-  const handleComponentHover = (componentId) => {
+  const handleComponentHover = (componentId: string | null) => {
+    // Allow null for mouse leave
     setHoveredComponent(componentId)
   }
 
@@ -593,141 +575,23 @@ const ToddComponentViewer = () => {
   // Handle version change
   const handleVersionChange = (version) => {
     setActiveVersion(version)
-    resetPositionsForCurrentSelection()
+    console.log('Setting positions.')
+    console.log(positions)
+    setPositions(componentData.positions)
   }
 
   // Handle subject area change
   const handleSubjectAreaChange = (area) => {
     setActiveSubjectArea(area)
-    resetPositionsForCurrentSelection()
+    setPositions(componentData.positions)
   }
 
-  // Reset positions for the current selection
+  // Reset positions
   const resetPositionsForCurrentSelection = () => {
-    const components = getActiveComponents()
-    const newPositions = { ...positions }
-
-    // Position components in appropriate formations based on subject area
-    const centerX = 400
-    const centerY = 300
-    const radius = 200
-
-    if (activeSubjectArea === 'arena') {
-      // Arena in center, challenges and solutions nearby, others in circle
-      const arenaComponent = components.find((c) => c.id === 'arena')
-      if (arenaComponent) {
-        // Place Arena at center
-        newPositions['arena'] = {
-          ...newPositions['arena'],
-          x: centerX,
-          y: centerY,
-          width: 140,
-          height: 80
-        }
-
-        // Place directly connected components in a circle around Arena
-        const arenaConnections = components.filter(
-          (c) =>
-            c.id !== 'arena' &&
-            (c.connections.includes('arena') ||
-              arenaComponent.connections.includes(c.id))
-        )
-
-        const angleStep = (2 * Math.PI) / arenaConnections.length
-        arenaConnections.forEach((component, index) => {
-          const angle = index * angleStep
-          newPositions[component.id] = {
-            ...newPositions[component.id],
-            x: centerX + radius * 0.6 * Math.cos(angle),
-            y: centerY + radius * 0.6 * Math.sin(angle)
-          }
-        })
-
-        // Place remaining components in an outer circle
-        const remainingComponents = components.filter((c) => {
-          return (
-            c.id !== 'arena' && !arenaConnections.some((ac) => ac.id === c.id)
-          )
-        })
-
-        const remainingAngleStep =
-          (2 * Math.PI) / (remainingComponents.length || 1)
-        remainingComponents.forEach((component, index) => {
-          const angle = index * remainingAngleStep
-          newPositions[component.id] = {
-            ...newPositions[component.id],
-            x: centerX + radius * 1.3 * Math.cos(angle),
-            y: centerY + radius * 1.3 * Math.sin(angle)
-          }
-        })
-      }
-    } else if (activeSubjectArea === 'optimizer') {
-      // Optimizer in center, direct connections nearby
-      const optimizerComponent = components.find((c) => c.id === 'optimizer')
-      if (optimizerComponent) {
-        // Place Optimizer at center
-        newPositions['optimizer'] = {
-          ...newPositions['optimizer'],
-          x: centerX,
-          y: centerY,
-          width: 140,
-          height: 80
-        }
-
-        // Place directly connected components in a circle around Optimizer
-        const optimizerConnections = components.filter(
-          (c) =>
-            c.id !== 'optimizer' &&
-            (c.connections.includes('optimizer') ||
-              optimizerComponent.connections.includes(c.id))
-        )
-
-        const angleStep = (2 * Math.PI) / optimizerConnections.length
-        optimizerConnections.forEach((component, index) => {
-          const angle = index * angleStep
-          newPositions[component.id] = {
-            ...newPositions[component.id],
-            x: centerX + radius * 0.6 * Math.cos(angle),
-            y: centerY + radius * 0.6 * Math.sin(angle)
-          }
-        })
-
-        // Place remaining components in an outer circle
-        const remainingComponents = components.filter((c) => {
-          return (
-            c.id !== 'optimizer' &&
-            !optimizerConnections.some((oc) => oc.id === c.id)
-          )
-        })
-
-        const remainingAngleStep =
-          (2 * Math.PI) / (remainingComponents.length || 1)
-        remainingComponents.forEach((component, index) => {
-          const angle = index * remainingAngleStep
-          newPositions[component.id] = {
-            ...newPositions[component.id],
-            x: centerX + radius * 1.3 * Math.cos(angle),
-            y: centerY + radius * 1.3 * Math.sin(angle)
-          }
-        })
-      }
-    } else {
-      // Default circular layout for "all" view
-      const angleStep = (2 * Math.PI) / components.length
-      components.forEach((component, index) => {
-        const angle = index * angleStep
-        newPositions[component.id] = {
-          ...newPositions[component.id],
-          x: centerX + radius * Math.cos(angle),
-          y: centerY + radius * Math.sin(angle)
-        }
-      })
-    }
-
-    setPositions(newPositions)
+    setPositions(componentData.positions)
   }
 
-  // Reset positions to default circular layout
+  // Reset positions
   const resetPositions = () => {
     resetPositionsForCurrentSelection()
   }
@@ -792,8 +656,9 @@ const ToddComponentViewer = () => {
   // Handle background click to deselect
   const handleBackgroundClick = (e) => {
     // Only handle direct clicks on the SVG background, not on components
-    if (e.target === svgRef.current) {
+    if (e.target === e.currentTarget) {
       setSelectedComponent(null)
+      setSelectedComponents([])
     }
   }
 
@@ -848,40 +713,6 @@ const ToddComponentViewer = () => {
 
         {/* Grid background */}
         {snapToGrid && <rect width="800" height="600" fill="url(#grid)" />}
-
-        {/* Subject area background highlight */}
-        {activeSubjectArea !== 'all' && (
-          <rect
-            x="50"
-            y="50"
-            width="700"
-            height="500"
-            rx="20"
-            ry="20"
-            fill={
-              activeSubjectArea === 'arena'
-                ? 'rgba(76, 175, 80, 0.1)'
-                : 'rgba(255, 152, 0, 0.1)'
-            }
-            stroke={activeSubjectArea === 'arena' ? '#4CAF50' : '#FF9800'}
-            strokeWidth="1"
-            strokeDasharray="5,3"
-          />
-        )}
-
-        {/* Subject area title */}
-        {activeSubjectArea !== 'all' &&
-          componentData.subjectAreas[activeSubjectArea] && (
-            <text
-              x="80"
-              y="80"
-              fontWeight="bold"
-              fontSize="18"
-              fill={activeSubjectArea === 'arena' ? '#4CAF50' : '#FF9800'}
-            >
-              {componentData.subjectAreas[activeSubjectArea].name}
-            </text>
-          )}
 
         {/* Render connections first */}
         {activeComponents.map((component) => {
@@ -982,17 +813,23 @@ const ToddComponentViewer = () => {
           return (
             <g
               key={component.id}
+              data-component-id={component.id}
               transform={`translate(${pos.x}, ${pos.y})`}
               onMouseDown={(e) => {
                 // If it's not a right-click, handle as drag
                 if (e.button !== 2) {
                   handleMouseDown(e, component.id)
-
                   // Prevent default to avoid text selection
                   e.preventDefault()
                 }
               }}
-              // Removed onClick handler - selection now happens on mouseUp if no drag occurred
+              onClick={(e) => {
+                // Add direct click handler
+                e.stopPropagation() // Prevent bubbling to background
+                //if (!isDragging) {
+                //  handleComponentSelect(component.id, e)
+                //}
+              }}
               onMouseEnter={() => handleComponentHover(component.id)}
               onMouseLeave={handleComponentHoverEnd}
               style={{
@@ -1126,14 +963,6 @@ const ToddComponentViewer = () => {
 
         {/* Subject Area Selector */}
         <div className="mt-2 flex space-x-2">
-          <button
-            className={`rounded px-3 py-1 text-sm ${
-              activeSubjectArea === 'all' ? 'bg-purple-600' : 'bg-gray-600'
-            }`}
-            onClick={() => handleSubjectAreaChange('all')}
-          >
-            All Components
-          </button>
           <button
             className={`rounded px-3 py-1 text-sm ${
               activeSubjectArea === 'arena' ? 'bg-green-600' : 'bg-gray-600'
