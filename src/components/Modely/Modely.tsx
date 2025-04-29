@@ -6,6 +6,103 @@ import React, { useState, useEffect, useRef } from 'react'
 // If your build setup supports direct JSON imports:
 // import initialData from '../../data/todd-components.json'
 
+// Define a type for position data for better clarity
+type Position = {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+type PositionsMap = {
+  [key: string]: Position
+}
+
+// --- NEW: Function to calculate initial layout ---
+async function calculateInitialLayout(
+  m1Components: { id: string }[],
+  m2Components: { id: string }[],
+  layoutFilePath: string
+): Promise<PositionsMap> {
+  const initialPositions: PositionsMap = {}
+
+  // Helper function for circular layout (kept local as it's specific to this calculation)
+  const positionComponentsInCircle = (
+    componentsToPosition: { id: string }[],
+    centerX: number,
+    centerY: number,
+    radius: number
+  ) => {
+    const angleStep = (2 * Math.PI) / (componentsToPosition.length || 1) // Avoid division by zero
+
+    componentsToPosition.forEach((component, index) => {
+      if (!initialPositions[component.id]) {
+        // Avoid overwriting if already positioned
+        const angle = index * angleStep
+        initialPositions[component.id] = {
+          x: centerX + radius * Math.cos(angle),
+          y: centerY + radius * Math.sin(angle),
+          width: 140, // Default width
+          height: 80 // Default height
+        }
+      }
+    })
+  }
+
+  // --- START: Load and apply M1 layout ---
+  try {
+    const layoutResponse = await fetch(layoutFilePath) // Fetch layout using provided path
+    if (!layoutResponse.ok) {
+      throw new Error(`HTTP error loading layout: ${layoutResponse.status}`)
+    }
+    const m1LayoutData = await layoutResponse.json()
+
+    // Apply layout positions for M1 components found in the layout file
+    for (const componentId in m1LayoutData) {
+      if (Object.prototype.hasOwnProperty.call(m1LayoutData, componentId)) {
+        // Check if this component actually exists in the provided M1 list
+        if (m1Components.some((c: { id: string }) => c.id === componentId)) {
+          initialPositions[componentId] = { ...m1LayoutData[componentId] } // Use spread for clean copy
+        } else {
+          // Log if layout specifies a component not in the current M1 list
+          console.warn(
+            `Layout data found for M1 component "${componentId}" but it's not present in the current M1 component list.`
+          )
+        }
+      }
+    }
+  } catch (layoutError) {
+    console.error('Failed to load or apply M1 layout data:', layoutError)
+    // M1 components might remain unpositioned if layout loading fails.
+    // Consider adding fallback positioning here if needed.
+  }
+  // --- END: Load and apply M1 layout ---
+
+  // Position M2-only components separately (if they weren't positioned by the layout)
+  const m2OnlyComponents = m2Components.filter(
+    (m2c: { id: string }) =>
+      !m1Components.some((m1c: { id: string }) => m1c.id === m2c.id) &&
+      !initialPositions[m2c.id] // Only position if not already placed by layout
+  )
+  // Position them offset from the typical center (adjust coordinates as needed)
+  positionComponentsInCircle(m2OnlyComponents, 700, 300, 150)
+
+  // Fallback: Position any remaining M1 components that weren't in the layout file
+  const unpositionedM1Components = m1Components.filter(
+    (m1c) => !initialPositions[m1c.id]
+  )
+  if (unpositionedM1Components.length > 0) {
+    console.warn(
+      'Some M1 components were not found in the layout file, applying circular fallback.',
+      unpositionedM1Components.map((c) => c.id)
+    )
+    // Position them near the default center, perhaps slightly offset
+    positionComponentsInCircle(unpositionedM1Components, 400, 300, 250)
+  }
+
+  return initialPositions
+} // --- END: New layout function ---
+
 const ToddComponentViewer = () => {
   // Component definitions will be loaded from the JSON data
   const [componentData, setComponentData] = useState({
@@ -23,9 +120,7 @@ const ToddComponentViewer = () => {
   const [activeSubjectArea, setActiveSubjectArea] = useState('all')
 
   // Track positions of components
-  const [positions, setPositions] = useState<{
-    [key: string]: unknown
-  }>({})
+  const [positions, setPositions] = useState<PositionsMap>({}) // Use PositionsMap type
 
   // Track which component is being dragged
   const [draggingId, setDraggingId] = useState<string | null>(null) // Explicit type
@@ -91,75 +186,46 @@ const ToddComponentViewer = () => {
     }
   }
 
-  // Load component definitions
+  // Load component definitions and calculate initial layout
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchDataAndLayout = async () => {
       setIsLoading(true)
       setError(null)
       try {
-        // Adjust the path to your JSON file as needed
-        // Using fetch is generally more flexible than direct import
+        // 1. Fetch main component data
         const response = await fetch('/TODD/data/todd-components.json') // Or the correct relative/absolute path
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`)
         }
         const data = await response.json()
 
-        // --- Start: Logic moved from previous useEffect ---
+        // 2. Define Subject Areas (needs all components)
         const allComponents = [...data.components.m1, ...data.components.m2]
-        // Ensure unique components if IDs overlap between m1 and m2 (though they shouldn't based on current data)
         const uniqueComponents = Array.from(
           new Map(allComponents.map((item) => [item.id, item])).values()
         )
-
         const subjectAreas = defineSubjectAreas(uniqueComponents)
 
+        // 3. Set Component Data State
         setComponentData({
           components: data.components, // Store original m1/m2 structure
           typeMapping: data.typeMapping,
           subjectAreas
         })
 
-        // Initialize positions in a circular layout
-        const initialPositions: { [key: string]: unknown } = {}
-        const positionComponentsInCircle = (
-          componentsToPosition: { id: string }[], // Consider defining a type
-          centerX: number,
-          centerY: number,
-          radius: number
-        ) => {
-          const angleStep = (2 * Math.PI) / (componentsToPosition.length || 1) // Avoid division by zero
-
-          componentsToPosition.forEach((component, index) => {
-            if (!initialPositions[component.id]) {
-              // Avoid overwriting if already positioned
-              const angle = index * angleStep
-              initialPositions[component.id] = {
-                x: centerX + radius * Math.cos(angle),
-                y: centerY + radius * Math.sin(angle),
-                width: 140, // Default width
-                height: 80 // Default height
-              }
-            }
-          })
-        }
-
-        // Position M1 components
-        positionComponentsInCircle(data.components.m1, 400, 300, 200)
-
-        // Position M2-only components separately
-        const m2OnlyComponents = data.components.m2.filter(
-          (m2c: { id: string }) =>
-            !data.components.m1.some((m1c: { id: string }) => m1c.id === m2c.id)
+        // 4. Calculate Initial Layout using the new function
+        const initialPositions = await calculateInitialLayout(
+          data.components.m1,
+          data.components.m2,
+          '/TODD/data/todd-arena-m1.layout.json' // Pass layout file path
         )
-        positionComponentsInCircle(m2OnlyComponents, 700, 300, 150) // Position them offset from M1
 
+        // 5. Set Positions State
         setPositions(initialPositions)
-        // --- End: Logic moved ---
       } catch (e: unknown) {
-        console.error('Failed to load component data:', e)
+        console.error('Failed to load component data or calculate layout:', e)
         setError(
-          `Failed to load component data: ${
+          `Failed to load data or layout: ${
             e instanceof Error ? e.message : String(e)
           }`
         )
@@ -167,8 +233,8 @@ const ToddComponentViewer = () => {
         setIsLoading(false)
       }
     }
-    fetchData()
-  }, [])
+    fetchDataAndLayout()
+  }, []) // Keep dependency array empty as it runs once on mount
 
   // Grid snapping settings
   const [snapToGrid, setSnapToGrid] = useState(true)
@@ -285,7 +351,7 @@ const ToddComponentViewer = () => {
   const handleMouseUp = (e: MouseEvent | React.MouseEvent<SVGSVGElement>) => {
     // Type the event
     if (draggingId) {
-      // If we didn't drag (just clicked), select the component
+      // If we didn2't drag (just clicked), select the component
       if (!isDragging) {
         // Check if the event target is actually the component or its child
         // This prevents deselecting when clicking slightly off during a non-drag click
@@ -519,141 +585,21 @@ const ToddComponentViewer = () => {
   // Handle version change
   const handleVersionChange = (version) => {
     setActiveVersion(version)
-    resetPositionsForCurrentSelection()
+    //resetPositionsForCurrentSelection()
   }
 
   // Handle subject area change
   const handleSubjectAreaChange = (area) => {
     setActiveSubjectArea(area)
-    resetPositionsForCurrentSelection()
+    //resetPositionsForCurrentSelection()
   }
 
-  // Reset positions for the current selection
+  // Reset positions
   const resetPositionsForCurrentSelection = () => {
-    const components = getActiveComponents()
-    const newPositions = { ...positions }
-
-    // Position components in appropriate formations based on subject area
-    const centerX = 400
-    const centerY = 300
-    const radius = 200
-
-    if (activeSubjectArea === 'arena') {
-      // Arena in center, challenges and solutions nearby, others in circle
-      const arenaComponent = components.find((c) => c.id === 'arena')
-      if (arenaComponent) {
-        // Place Arena at center
-        newPositions['arena'] = {
-          ...newPositions['arena'],
-          x: centerX,
-          y: centerY,
-          width: 140,
-          height: 80
-        }
-
-        // Place directly connected components in a circle around Arena
-        const arenaConnections = components.filter(
-          (c) =>
-            c.id !== 'arena' &&
-            (c.connections.includes('arena') ||
-              arenaComponent.connections.includes(c.id))
-        )
-
-        const angleStep = (2 * Math.PI) / arenaConnections.length
-        arenaConnections.forEach((component, index) => {
-          const angle = index * angleStep
-          newPositions[component.id] = {
-            ...newPositions[component.id],
-            x: centerX + radius * 0.6 * Math.cos(angle),
-            y: centerY + radius * 0.6 * Math.sin(angle)
-          }
-        })
-
-        // Place remaining components in an outer circle
-        const remainingComponents = components.filter((c) => {
-          return (
-            c.id !== 'arena' && !arenaConnections.some((ac) => ac.id === c.id)
-          )
-        })
-
-        const remainingAngleStep =
-          (2 * Math.PI) / (remainingComponents.length || 1)
-        remainingComponents.forEach((component, index) => {
-          const angle = index * remainingAngleStep
-          newPositions[component.id] = {
-            ...newPositions[component.id],
-            x: centerX + radius * 1.3 * Math.cos(angle),
-            y: centerY + radius * 1.3 * Math.sin(angle)
-          }
-        })
-      }
-    } else if (activeSubjectArea === 'optimizer') {
-      // Optimizer in center, direct connections nearby
-      const optimizerComponent = components.find((c) => c.id === 'optimizer')
-      if (optimizerComponent) {
-        // Place Optimizer at center
-        newPositions['optimizer'] = {
-          ...newPositions['optimizer'],
-          x: centerX,
-          y: centerY,
-          width: 140,
-          height: 80
-        }
-
-        // Place directly connected components in a circle around Optimizer
-        const optimizerConnections = components.filter(
-          (c) =>
-            c.id !== 'optimizer' &&
-            (c.connections.includes('optimizer') ||
-              optimizerComponent.connections.includes(c.id))
-        )
-
-        const angleStep = (2 * Math.PI) / optimizerConnections.length
-        optimizerConnections.forEach((component, index) => {
-          const angle = index * angleStep
-          newPositions[component.id] = {
-            ...newPositions[component.id],
-            x: centerX + radius * 0.6 * Math.cos(angle),
-            y: centerY + radius * 0.6 * Math.sin(angle)
-          }
-        })
-
-        // Place remaining components in an outer circle
-        const remainingComponents = components.filter((c) => {
-          return (
-            c.id !== 'optimizer' &&
-            !optimizerConnections.some((oc) => oc.id === c.id)
-          )
-        })
-
-        const remainingAngleStep =
-          (2 * Math.PI) / (remainingComponents.length || 1)
-        remainingComponents.forEach((component, index) => {
-          const angle = index * remainingAngleStep
-          newPositions[component.id] = {
-            ...newPositions[component.id],
-            x: centerX + radius * 1.3 * Math.cos(angle),
-            y: centerY + radius * 1.3 * Math.sin(angle)
-          }
-        })
-      }
-    } else {
-      // Default circular layout for "all" view
-      const angleStep = (2 * Math.PI) / components.length
-      components.forEach((component, index) => {
-        const angle = index * angleStep
-        newPositions[component.id] = {
-          ...newPositions[component.id],
-          x: centerX + radius * Math.cos(angle),
-          y: centerY + radius * Math.sin(angle)
-        }
-      })
-    }
-
-    setPositions(newPositions)
+    applyLayout()
   }
 
-  // Reset positions to default circular layout
+  // Reset positions
   const resetPositions = () => {
     resetPositionsForCurrentSelection()
   }
