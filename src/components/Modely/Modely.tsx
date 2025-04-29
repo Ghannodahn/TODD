@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 // Assuming you placed the json file in src/data/
 // If your build setup supports direct JSON imports:
-// import initialData from '../../data/todd-components.json'
+// import initialData from '/TODD/data/todd-components.json'
 
 // Define a type for position data for better clarity
 type Position = {
