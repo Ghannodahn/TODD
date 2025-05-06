@@ -1,28 +1,43 @@
 import React from 'react'
-import Home from '../Home/Home'
-import ToddComponentViewer from '../Modely/Modely' // Assuming Modely.tsx exports ToddComponentViewer
+import ToddComponentViewer from '../../prototypes/Modely/Modely'
+import TODDRecipeViewer from '../../prototypes/Recipes/todd-recipes'
+import Home from 'components/Home/Home'
 
-// Define the props interface
+// Define props type
 interface ContentProps {
   currentView: string
 }
 
 const Content: React.FC<ContentProps> = ({ currentView }) => {
-  // Conditionally render components based on the currentView prop
+  // Render different components based on currentView value
   switch (currentView) {
     case 'home':
       return <Home />
-    case 'model':
-      return <ToddComponentViewer />
     case 'chat':
-      // Placeholder for Chat component
-      return <div>Chat Component Placeholder - Coming Soon!</div>
+      return (
+        <div className="p-4">
+          <h1 className="mb-4 text-xl font-bold">Chat Interface</h1>
+          <p>Chat functionality will be implemented here.</p>
+        </div>
+      )
+    case 'modely':
+      return <ToddComponentViewer />
+    case 'recipes':
+      return <TODDRecipeViewer />
     case 'results':
-      // Placeholder for Results component
-      return <div>Results Component Placeholder</div>
+      return (
+        <div className="p-4">
+          <h1 className="mb-4 text-xl font-bold">Results</h1>
+          <p>Results will be displayed here.</p>
+        </div>
+      )
     default:
-      // Default to Home if the view is unknown
-      return <Home />
+      return (
+        <div className="p-4">
+          <h1 className="mb-4 text-xl font-bold">Page Not Found</h1>
+          <p>The requested view doesn&apos;t exist.</p>
+        </div>
+      )
   }
 }
 

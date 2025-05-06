@@ -791,7 +791,6 @@ const ToddComponentViewer = () => {
           {
             /* Interactive states */
           }
-          const isSelected = selectedComponent === component.id
           const isMultiSelected = selectedComponents.includes(component.id)
           const isHovered = hoveredComponent === component.id
           const isConnected = hoveredComponent
