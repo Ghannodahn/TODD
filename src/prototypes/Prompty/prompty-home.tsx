@@ -83,7 +83,7 @@ const PromptyHomepage = () => {
       <footer className="bg-slate-800 py-6 text-center text-white">
         <div className="container mx-auto px-4">
           <h2 className="mb-4 text-2xl font-bold">Prompty</h2>
-          <div className="mb-4 flex justify-center">
+          <div className="mb-4 justify-center">
             A Creative-Enabling Endeavor by&nbsp;
             <a
               href="www.hcastleh.com"
