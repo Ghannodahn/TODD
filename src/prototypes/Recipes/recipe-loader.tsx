@@ -26,7 +26,11 @@ interface RecipeLoaderProps {
   type?: 'recipe' | 'index'
 }
 
-const RecipeLoader: React.FC<RecipeLoaderProps> = ({ url, children }) => {
+const RecipeLoader: React.FC<RecipeLoaderProps> = ({
+  url,
+  children,
+  type = 'recipe'
+}) => {
   const [data, setData] = useState<RecipeData | RecipeOption[] | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -51,7 +55,16 @@ const RecipeLoader: React.FC<RecipeLoaderProps> = ({ url, children }) => {
         }
 
         const jsonData = await response.json()
-        setData(jsonData)
+
+        // Sort recipes alphabetically by title when loading an index
+        if (type === 'index' && Array.isArray(jsonData)) {
+          const sortedData = [...jsonData].sort(
+            (a: RecipeOption, b: RecipeOption) => a.title.localeCompare(b.title)
+          )
+          setData(sortedData)
+        } else {
+          setData(jsonData)
+        }
       } catch (err) {
         console.error('Error loading recipe data:', err)
         setError(err instanceof Error ? err.message : 'Unknown error occurred')
@@ -61,7 +74,7 @@ const RecipeLoader: React.FC<RecipeLoaderProps> = ({ url, children }) => {
     }
 
     fetchData()
-  }, [url])
+  }, [url, type])
 
   if (isLoading) {
     return <div className="p-4 text-center text-amber-800">Loading...</div>
