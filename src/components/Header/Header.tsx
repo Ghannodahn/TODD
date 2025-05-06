@@ -1,13 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react'
+import { NavLink } from 'react-router-dom'
 
-// Define the types for the props we expect
-interface HeaderProps {
-  setCurrentView: (view: string) => void
-}
-
-const Header: React.FC<HeaderProps> = ({ setCurrentView }) => {
+const Header: React.FC = () => {
   // Define common button styles for consistency
-  const navButtonStyle = 'text-gray-700 hover:text-blue-600 cursor-pointer'
+  const navLinkStyle = ({ isActive }: { isActive: boolean }) =>
+    `${
+      isActive ? 'text-blue-600' : 'text-gray-700'
+    } hover:text-blue-600 cursor-pointer`
 
   // State to track if dropdown is open
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
@@ -43,26 +42,19 @@ const Header: React.FC<HeaderProps> = ({ setCurrentView }) => {
       <nav>
         <ul className="flex space-x-4">
           <li>
-            {/* Use button and onClick to set the view */}
-            <button
-              onClick={() => setCurrentView('home')}
-              className={navButtonStyle}
-            >
+            <NavLink to="/" className={navLinkStyle}>
               Home
-            </button>
+            </NavLink>
           </li>
           <li>
-            <button
-              onClick={() => setCurrentView('chat')}
-              className={navButtonStyle}
-            >
+            <NavLink to="/chat" className={navLinkStyle}>
               Chat
-            </button>
+            </NavLink>
           </li>
           <li className="relative" ref={dropdownRef}>
             <button
               onClick={toggleDropdown}
-              className={`${navButtonStyle} flex items-center`}
+              className={`flex cursor-pointer items-center text-gray-700 hover:text-blue-600`}
             >
               Prototypes
               <svg
@@ -86,34 +78,35 @@ const Header: React.FC<HeaderProps> = ({ setCurrentView }) => {
             {/* Dropdown menu */}
             {isDropdownOpen && (
               <div className="absolute right-0 mt-2 w-40 rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5">
-                <button
-                  onClick={() => {
-                    setCurrentView('modely')
-                    setIsDropdownOpen(false)
-                  }}
-                  className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
-                >
-                  Modely
-                </button>
-                <button
-                  onClick={() => {
-                    setCurrentView('recipes')
-                    setIsDropdownOpen(false)
-                  }}
-                  className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
+                <NavLink
+                  to="/recipes"
+                  onClick={() => setIsDropdownOpen(false)}
+                  className={({ isActive }) =>
+                    `block w-full px-4 py-2 text-left text-sm ${
+                      isActive ? 'bg-gray-100 text-blue-600' : 'text-gray-700'
+                    } hover:bg-gray-100`
+                  }
                 >
                   Recipes
-                </button>
+                </NavLink>
+                <NavLink
+                  to="/modely"
+                  onClick={() => setIsDropdownOpen(false)}
+                  className={({ isActive }) =>
+                    `block w-full px-4 py-2 text-left text-sm ${
+                      isActive ? 'bg-gray-100 text-blue-600' : 'text-gray-700'
+                    } hover:bg-gray-100`
+                  }
+                >
+                  Modely
+                </NavLink>
               </div>
             )}
           </li>
           <li>
-            <button
-              onClick={() => setCurrentView('results')}
-              className={navButtonStyle}
-            >
+            <NavLink to="/results" className={navLinkStyle}>
               Results
-            </button>
+            </NavLink>
           </li>
         </ul>
       </nav>

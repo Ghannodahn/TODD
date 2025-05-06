@@ -1,20 +1,21 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
+import { BrowserRouter } from 'react-router-dom'
 import Header from './Header/Header'
-import Content from './Content/Content' // Import the new Content component
+import Content from './Content/Content'
 
 function App() {
-  // State to track the current view, default to 'home'
-  const [currentView, setCurrentView] = useState<string>('home')
+  // Set the basename to '/TODD' for GitHub Pages project deployment
+  const basePath = process.env.NODE_ENV === 'production' ? '/TODD' : ''
 
   return (
-    <div className="app">
-      {/* Pass the state setter function to Header */}
-      <Header setCurrentView={setCurrentView} />
-      {/* Pass the current view state to Content */}
-      <div className="content">
-        <Content currentView={currentView} />
+    <BrowserRouter basename={basePath}>
+      <div className="app">
+        <Header />
+        <div className="content">
+          <Content />
+        </div>
       </div>
-    </div>
+    </BrowserRouter>
   )
 }
 

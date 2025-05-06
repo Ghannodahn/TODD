@@ -1,44 +1,47 @@
 import React from 'react'
+import { Routes, Route } from 'react-router-dom'
 import ToddComponentViewer from '../../prototypes/Modely/Modely'
 import TODDRecipeViewer from '../../prototypes/Recipes/todd-recipes'
+import PromptyHomepage from '../../prototypes/Prompty/prompty-home'
 import Home from 'components/Home/Home'
 
-// Define props type
-interface ContentProps {
-  currentView: string
-}
+const Content: React.FC = () => {
+  return (
+    <Routes>
+      <Route path="/" element={<Home />} />
+      <Route
+        path="/chat"
+        element={
+          <div className="p-4">
+            <h1 className="mb-4 text-xl font-bold">Chat Interface</h1>
+            <p>Chat functionality will be implemented here.</p>
+          </div>
+        }
+      />
+      <Route path="/modely" element={<ToddComponentViewer />} />
+      <Route path="/recipes" element={<TODDRecipeViewer />} />
+      <Route path="/prompty" element={<PromptyHomepage />} />
 
-const Content: React.FC<ContentProps> = ({ currentView }) => {
-  // Render different components based on currentView value
-  switch (currentView) {
-    case 'home':
-      return <Home />
-    case 'chat':
-      return (
-        <div className="p-4">
-          <h1 className="mb-4 text-xl font-bold">Chat Interface</h1>
-          <p>Chat functionality will be implemented here.</p>
-        </div>
-      )
-    case 'modely':
-      return <ToddComponentViewer />
-    case 'recipes':
-      return <TODDRecipeViewer />
-    case 'results':
-      return (
-        <div className="p-4">
-          <h1 className="mb-4 text-xl font-bold">Results</h1>
-          <p>Results will be displayed here.</p>
-        </div>
-      )
-    default:
-      return (
-        <div className="p-4">
-          <h1 className="mb-4 text-xl font-bold">Page Not Found</h1>
-          <p>The requested view doesn&apos;t exist.</p>
-        </div>
-      )
-  }
+      <Route
+        path="/results"
+        element={
+          <div className="p-4">
+            <h1 className="mb-4 text-xl font-bold">Results</h1>
+            <p>Results will be displayed here.</p>
+          </div>
+        }
+      />
+      <Route
+        path="*"
+        element={
+          <div className="p-4">
+            <h1 className="mb-4 text-xl font-bold">Page Not Found</h1>
+            <p>The requested view doesn't exist.</p>
+          </div>
+        }
+      />
+    </Routes>
+  )
 }
 
 export default Content

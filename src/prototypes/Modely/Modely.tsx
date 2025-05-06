@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 // Assuming you placed the json file in src/data/
 // If your build setup supports direct JSON imports:
-// import initialData from '/TODD/data/todd-components.json'
+// import initialData from '/TODD/data/modely/todd-components.json'
 
 // Define a type for position data for better clarity
 type Position = {
@@ -199,7 +199,7 @@ const ToddComponentViewer = () => {
       setError(null)
       try {
         // 1. Fetch main component data
-        const response = await fetch('/TODD/data/todd-components.json') // Or the correct relative/absolute path
+        const response = await fetch('/TODD/data/modely/todd-components.json') // Or the correct relative/absolute path
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`)
         }
@@ -216,7 +216,7 @@ const ToddComponentViewer = () => {
         const initialPositions = await applyLayout(
           data.components.m1,
           data.components.m2,
-          '/TODD/data/todd-arena-m1.layout.json' // Pass layout file path
+          '/TODD/data/modely/todd-arena.layout.json' // Pass layout file path
         )
 
         // 4. Set Component Data State
