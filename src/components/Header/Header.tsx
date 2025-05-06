@@ -79,6 +79,17 @@ const Header: React.FC = () => {
             {isDropdownOpen && (
               <div className="absolute right-0 mt-2 w-40 rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5">
                 <NavLink
+                  to="/prompty"
+                  onClick={() => setIsDropdownOpen(false)}
+                  className={({ isActive }) =>
+                    `block w-full px-4 py-2 text-left text-sm ${
+                      isActive ? 'bg-gray-100 text-blue-600' : 'text-gray-700'
+                    } hover:bg-gray-100`
+                  }
+                >
+                  Prompty
+                </NavLink>
+                <NavLink
                   to="/recipes"
                   onClick={() => setIsDropdownOpen(false)}
                   className={({ isActive }) =>
