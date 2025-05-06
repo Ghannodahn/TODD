@@ -2,7 +2,6 @@ import React from 'react'
 import { Routes, Route } from 'react-router-dom'
 import ToddComponentViewer from '../../prototypes/Modely/Modely'
 import TODDRecipeViewer from '../../prototypes/Recipes/todd-recipes'
-import PromptyHomepage from '../../prototypes/Prompty/prompty-home'
 import Home from 'components/Home/Home'
 
 const Content: React.FC = () => {
@@ -20,7 +19,6 @@ const Content: React.FC = () => {
       />
       <Route path="/modely" element={<ToddComponentViewer />} />
       <Route path="/recipes" element={<TODDRecipeViewer />} />
-      <Route path="/prompty" element={<PromptyHomepage />} />
 
       <Route
         path="/results"
