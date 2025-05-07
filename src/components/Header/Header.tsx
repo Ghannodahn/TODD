@@ -21,6 +21,10 @@ const navItems = [
         path: '/recipes'
       },
       {
+        label: 'Arty',
+        path: '/arty'
+      },
+      {
         label: 'Modely',
         path: '/modely'
       }
