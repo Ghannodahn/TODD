@@ -26,9 +26,13 @@ const MaterialCard = ({ material }: { material: Material }) => {
   // Doubled the size by adjusting aspect-square and adding more padding
   return (
     <div
-      className={`${material.color} flex aspect-square flex-col items-center justify-between rounded-md p-4 text-center shadow-sm`}
+      className="flex aspect-square flex-col items-center justify-between rounded-md p-4 text-center shadow-sm"
+      style={{ backgroundColor: material.color }}
     >
-      <div className="mb-2 rounded-full bg-white p-2 text-indigo-600">
+      <div
+        className="mb-2 rounded-full bg-white p-2"
+        style={{ color: '#4f46e5' }}
+      >
         {React.cloneElement(material.icon, { size: 32 })}{' '}
         {/* Doubled icon size */}
       </div>
@@ -65,22 +69,28 @@ const ProcessStep = ({
       <div
         className="flex cursor-pointer items-center justify-between p-6 hover:bg-indigo-50" /* Doubled padding */
         onClick={() => toggleExpand(step.id)}
+        style={{ ':hover': { backgroundColor: '#eef2ff' } }}
       >
         <div className="flex items-center">
-          <div className="mr-6 flex size-16 items-center justify-center rounded-full bg-indigo-600 text-white">
+          <div
+            className="mr-6 flex size-16 items-center justify-center rounded-full text-white"
+            style={{ backgroundColor: '#4f46e5' }}
+          >
             {' '}
             {/* Doubled size and margin */}
             <span className="text-lg font-bold">{step.id}</span>{' '}
             {/* Increased text size */}
           </div>
-          <h3 className="text-xl font-bold text-indigo-700">{step.title}</h3>{' '}
+          <h3 className="text-xl font-bold" style={{ color: '#4338ca' }}>
+            {step.title}
+          </h3>{' '}
           {/* Increased text size */}
         </div>
         {isExpanded ? <ChevronUp size={40} /> : <ChevronDown size={40} />}{' '}
         {/* Doubled icon size */}
       </div>
       {isExpanded && (
-        <div className="border-t border-indigo-100 p-6 pt-0">
+        <div className="border-t p-6 pt-0" style={{ borderColor: '#e0e7ff' }}>
           {' '}
           {/* Doubled padding */}
           <ul className="space-y-4 text-base">
@@ -88,7 +98,9 @@ const ProcessStep = ({
             {/* Doubled spacing, increased text size */}
             {step.details.map((detail, idx) => (
               <li key={idx} className="flex items-start">
-                <span className="mr-4 mt-1 text-indigo-500">•</span>{' '}
+                <span className="mr-4 mt-1" style={{ color: '#6366f1' }}>
+                  •
+                </span>{' '}
                 {/* Doubled margin */}
                 <span>{detail}</span>
               </li>
@@ -110,10 +122,13 @@ const TechniqueTile = ({ technique }: { technique: Technique }) => {
   const formattedDetail = technique.detail.split('. ').join('.\n\n')
 
   return (
-    <div className="h-full rounded-lg border-l-4 border-indigo-400 bg-white p-6 shadow-md">
+    <div
+      className="h-full rounded-lg bg-white p-6 shadow-md"
+      style={{ borderLeft: '4px solid #818cf8' }}
+    >
       {' '}
       {/* Doubled border and padding */}
-      <h4 className="mb-4 text-base font-semibold text-indigo-700">
+      <h4 className="mb-4 text-base font-semibold" style={{ color: '#4338ca' }}>
         {' '}
         {/* Doubled margin, increased text size */}
         {technique.title}
@@ -144,13 +159,18 @@ const InfoSection = ({
       <div className="mb-4 flex items-center">
         {' '}
         {/* Doubled margin */}
-        <div className="mr-4 rounded bg-indigo-100 p-2 text-indigo-600">
+        <div
+          className="mr-4 rounded p-2"
+          style={{ backgroundColor: '#e0e7ff', color: '#4f46e5' }}
+        >
           {' '}
           {/* Doubled margin and padding */}
           {React.cloneElement(icon as React.ReactElement, { size: 36 })}{' '}
           {/* Doubled icon size */}
         </div>
-        <h3 className="text-base font-bold text-indigo-800">{title}</h3>{' '}
+        <h3 className="text-base font-bold" style={{ color: '#1e40af' }}>
+          {title}
+        </h3>{' '}
         {/* Increased text size */}
       </div>
       <ul className="space-y-2 text-sm">
@@ -160,7 +180,9 @@ const InfoSection = ({
           !hasLinks &&
           items.map((item, idx) => (
             <li key={idx} className="flex items-start">
-              <span className="mr-2 mt-1 text-indigo-500">•</span>
+              <span className="mr-2 mt-1" style={{ color: '#6366f1' }}>
+                •
+              </span>
               <span className="whitespace-pre-line">
                 {typeof item === 'string'
                   ? item.split('. ').join('.\n\n')
@@ -171,12 +193,15 @@ const InfoSection = ({
         {hasLinks &&
           items.map((item, idx) => (
             <li key={idx} className="flex items-start">
-              <span className="mr-2 mt-1 text-indigo-500">•</span>
+              <span className="mr-2 mt-1" style={{ color: '#6366f1' }}>
+                •
+              </span>
               <a
                 href={(item as { url: string }).url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center whitespace-pre-line text-blue-600 hover:underline"
+                className="flex items-center whitespace-pre-line hover:underline"
+                style={{ color: '#2563eb' }}
               >
                 {(item as { text: string }).text.split('. ').join('.\n\n')}
                 <Link size={16} className="ml-2 inline-block" />{' '}
@@ -243,9 +268,12 @@ const FolkArtInfographic = () => {
   }))
 
   return (
-    <div className="min-h-screen bg-indigo-50">
+    <div className="min-h-screen" style={{ backgroundColor: '#eef2ff' }}>
       {/* Header */}
-      <header className="sticky top-0 z-10 bg-indigo-800 px-8 py-6 text-white shadow-md">
+      <header
+        className="sticky top-0 z-10 px-8 py-6 text-white shadow-md"
+        style={{ backgroundColor: '#3730a3' }}
+      >
         {' '}
         {/* Doubled padding */}
         <div className="mx-auto flex max-w-6xl items-center justify-between">
@@ -269,7 +297,10 @@ const FolkArtInfographic = () => {
         <div className="mb-12">
           {' '}
           {/* Doubled margin */}
-          <h2 className="mb-6 flex items-center text-2xl font-bold text-indigo-800">
+          <h2
+            className="mb-6 flex items-center text-2xl font-bold"
+            style={{ color: '#1e40af' }}
+          >
             {' '}
             {/* Doubled margin, increased text size */}
             <Package size={40} className="mr-4" />{' '}
@@ -291,7 +322,10 @@ const FolkArtInfographic = () => {
           <div className="mb-6 flex items-center justify-between">
             {' '}
             {/* Doubled margin */}
-            <h2 className="flex items-center text-2xl font-bold text-indigo-800">
+            <h2
+              className="flex items-center text-2xl font-bold"
+              style={{ color: '#1e40af' }}
+            >
               {' '}
               {/* Increased text size */}
               <Wrench size={40} className="mr-4" />{' '}
@@ -300,7 +334,11 @@ const FolkArtInfographic = () => {
             </h2>
             <button
               onClick={areAllExpanded ? collapseAll : expandAll}
-              className="flex items-center rounded-full bg-indigo-600 px-6 py-2 text-sm text-white hover:bg-indigo-700" /* Doubled padding */
+              className="flex items-center rounded-full px-6 py-2 text-sm text-white"
+              style={{
+                backgroundColor: '#4f46e5',
+                ':hover': { backgroundColor: '#4338ca' }
+              }}
             >
               {areAllExpanded ? (
                 <>
@@ -330,7 +368,10 @@ const FolkArtInfographic = () => {
         <div className="mb-12">
           {' '}
           {/* Doubled margin */}
-          <h2 className="mb-6 flex items-center text-2xl font-bold text-indigo-800">
+          <h2
+            className="mb-6 flex items-center text-2xl font-bold"
+            style={{ color: '#1e40af' }}
+          >
             {' '}
             {/* Doubled margin, increased text size */}
             <PenTool size={40} className="mr-4" />{' '}
@@ -364,7 +405,10 @@ const FolkArtInfographic = () => {
       </main>
 
       {/* Footer */}
-      <footer className="bg-indigo-800 py-4 text-center text-sm text-white">
+      <footer
+        className="py-4 text-center text-sm text-white"
+        style={{ backgroundColor: '#3730a3' }}
+      >
         {' '}
         {/* Doubled padding, increased text size */}© 2025 FolkArt Application
         Guide | Created for artists and crafters
