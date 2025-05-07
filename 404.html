@@ -23,29 +23,7 @@
       );
     })();
   </script>
-  <!-- Add this script to the <head> of your public/index.html -->
-  <script>
-    // This script checks if the URL contains redirect parameters and
-    // uses History API to redirect to the correct path
-    (function() {
-      var redirect = sessionStorage.redirect;
-      delete sessionStorage.redirect;
-
-      // Check if this is a redirect back from the 404 page
-      var p = new URLSearchParams(window.location.search).get('p');
-      if (p) {
-        // Convert the query parameter back to a proper URL and navigate there
-        var cleanPath = p.replace(/~and~/g, '&');
-        var q = new URLSearchParams(window.location.search).get('q');
-
-        history.replaceState(null, null,
-          cleanPath + (q ? ('?' + q.replace(/~and~/g, '&')) : '') +
-          window.location.hash
-        );
-      }
-    })();
-  </script>
-</head>
+  </head>
 <body>
   <h1>Redirecting...</h1>
 </body>
