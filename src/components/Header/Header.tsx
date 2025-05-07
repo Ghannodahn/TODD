@@ -111,7 +111,7 @@ const Header: React.FC = () => {
 
                   {/* Dropdown menu */}
                   {isDropdownOpen && (
-                    <div className="absolute right-0 mt-2 w-40 rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5">
+                    <div className="absolute right-0 z-50 mt-2 w-40 rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5">
                       {item.children.map((child, childIndex) => (
                         <NavLink
                           key={childIndex}
