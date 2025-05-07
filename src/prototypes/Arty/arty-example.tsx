@@ -67,9 +67,8 @@ const ProcessStep = ({
       {' '}
       {/* Doubled vertical margin */}
       <div
-        className="flex cursor-pointer items-center justify-between p-6 hover:bg-indigo-50" /* Doubled padding */
+        className="flex cursor-pointer items-center justify-between p-6 hover:bg-indigo-50"
         onClick={() => toggleExpand(step.id)}
-        style={{ ':hover': { backgroundColor: '#eef2ff' } }}
       >
         <div className="flex items-center">
           <div
@@ -110,8 +109,7 @@ const ProcessStep = ({
       )}
     </div>
   )
-}
-// Technique Tile Component
+} // Technique Tile Component
 interface Technique {
   title: string
   detail: string
@@ -334,10 +332,9 @@ const FolkArtInfographic = () => {
             </h2>
             <button
               onClick={areAllExpanded ? collapseAll : expandAll}
-              className="flex items-center rounded-full px-6 py-2 text-sm text-white"
+              className="flex items-center rounded-full px-6 py-2 text-sm text-white hover:bg-[#4338ca]"
               style={{
-                backgroundColor: '#4f46e5',
-                ':hover': { backgroundColor: '#4338ca' }
+                backgroundColor: '#4f46e5'
               }}
             >
               {areAllExpanded ? (
@@ -416,5 +413,4 @@ const FolkArtInfographic = () => {
     </div>
   )
 }
-
 export default FolkArtInfographic
