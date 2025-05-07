@@ -5,6 +5,7 @@ import TODDRecipeViewer from '../../prototypes/Recipes/todd-recipes'
 import PromptyHomepage from '../../prototypes/Prompty/prompty-home'
 import Home from 'components/Home/Home'
 import ArtyExample from 'prototypes/Arty/arty-example'
+import ReactyExample from 'prototypes/Reacty/reacty-example'
 
 const Content: React.FC = () => {
   return (
@@ -15,6 +16,7 @@ const Content: React.FC = () => {
       <Route path="/recipes" element={<TODDRecipeViewer />} />
       <Route path="/prompty" element={<PromptyHomepage />} />
       <Route path="/arty" element={<ArtyExample />} />
+      <Route path="/reacty" element={<ReactyExample />} />
 
       <Route
         path="/*"

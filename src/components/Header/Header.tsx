@@ -25,6 +25,10 @@ const navItems = [
         path: '/arty'
       },
       {
+        label: 'Reacty',
+        path: '/reacty'
+      },
+      {
         label: 'Modely',
         path: '/modely'
       }
