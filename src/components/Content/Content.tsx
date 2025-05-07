@@ -10,31 +10,14 @@ const Content: React.FC = () => {
   return (
     <Routes>
       <Route path="/" element={<Home />} />
-      <Route
-        path="/chat"
-        element={
-          <div className="p-4">
-            <h1 className="mb-4 text-xl font-bold">Chat Interface</h1>
-            <p>Chat functionality will be implemented here.</p>
-          </div>
-        }
-      />
+
       <Route path="/modely" element={<ToddComponentViewer />} />
       <Route path="/recipes" element={<TODDRecipeViewer />} />
       <Route path="/prompty" element={<PromptyHomepage />} />
       <Route path="/arty" element={<ArtyExample />} />
 
       <Route
-        path="/results"
-        element={
-          <div className="p-4">
-            <h1 className="mb-4 text-xl font-bold">Results</h1>
-            <p>Results will be displayed here.</p>
-          </div>
-        }
-      />
-      <Route
-        path="*"
+        path="/*"
         element={
           <div className="p-4">
             <h1 className="mb-4 text-xl font-bold">Page Not Found</h1>

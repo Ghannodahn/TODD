@@ -3,11 +3,11 @@ import Header from './components/Header/Header'
 import Content from './components/Content/Content'
 
 function App() {
-  // Set the basename to '/TODD' for GitHub Pages project deployment
-  const basePath = process.env.NODE_ENV === 'production' ? '/TODD' : ''
+  // Only use basename in production
+  const basename = import.meta.env.PROD ? '/TODD' : '/'
 
   return (
-    <BrowserRouter basename={basePath}>
+    <BrowserRouter basename={basename}>
       <div className="app">
         <Header />
         <div className="content">
