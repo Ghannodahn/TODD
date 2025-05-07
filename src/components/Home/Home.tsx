@@ -8,14 +8,7 @@ import {
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useEffect, useState } from 'react'
-
-// Define TypeScript interface for prototype data
-interface Prototype {
-  iconName: string
-  title: string
-  description: string
-  path: string
-}
+import Prototype from 'prototypes/prototypes'
 
 const TODDHomepage = () => {
   const [prototypes, setPrototypes] = useState<Prototype[]>([])
