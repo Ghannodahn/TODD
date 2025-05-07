@@ -4,26 +4,36 @@
   <meta charset="utf-8">
   <title>TODD - Redirecting</title>
   <script>
-    // Store the URL path in sessionStorage
-    sessionStorage.redirect = location.href;
-  </script>
-  <!-- Immediately redirect to the base URL -->
-  <meta http-equiv="refresh" content="0;URL='/TODD/'">
-</head>
-<body>
-  <h1>Redirecting...</h1>
-  <!-- Add this script to your public/index.html file -->
-  <script>
+    // Single Page Apps for GitHub Pages
+    // https://github.com/rafgraph/spa-github-pages
+    // Copyright (c) 2016 Rafael Pedicini, licensed under the MIT License
     (function() {
-      // Check if we need to restore the URL
-      var redirect = sessionStorage.redirect;
-      delete sessionStorage.redirect;
+      // This handles the URL restoration
+      if (window.location.search) {
+        var p = window.location.search.match(/\?p=\/([^&]*)/);
+        var q = window.location.search.match(/&q=([^&]*)/);
 
-      if (redirect && redirect !== location.href) {
-        // Restore the URL without changing the browser history
-        history.replaceState(null, null, redirect);
+        // If the URL has a path parameter, replace the current URL with the proper URL
+        if (p) {
+          // Convert the path parameter back to a proper URL
+          var path = p[1].replace(/~and~/g, '&');
+          var search = q ? q[1].replace(/~and~/g, '&') : '';
+
+          // Replace the current state with the original URL
+          window.history.replaceState(
+            null,
+            null,
+            window.location.pathname.split('?')[0] +
+            (path ? path : '') +
+            (search ? '?' + search : '') +
+            window.location.hash
+          );
+        }
       }
     })();
   </script>
+</head>
+<body>
+  <h1>Redirecting...</h1>
 </body>
 </html>
