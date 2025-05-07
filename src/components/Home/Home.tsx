@@ -3,47 +3,55 @@ import {
   ZapIcon,
   FileText,
   Palette,
-  ArrowRightCircle
+  ArrowRightCircle,
+  Grid
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+
+// Define TypeScript interface for prototype data
+interface Prototype {
+  iconName: string
+  title: string
+  description: string
+  path: string
+}
 
 const TODDHomepage = () => {
-  const prototypes = [
-    {
-      icon: <Brain size={24} />,
-      title: 'Modely',
-      description:
-        'Visual design modeling tool for creating Entity Relationship diagrams and other structured visual schemas',
-      path: '/modely'
-    },
-    {
-      icon: <FileText size={24} />,
-      title: 'Recipes',
-      description:
-        'Culinary solution that generates recipes based on dietary requirements, available ingredients, and budget constraints',
-      path: '/recipes'
-    },
-    {
-      icon: <ZapIcon size={24} />,
-      title: 'Prompty',
-      description:
-        'Structured prompt engineering tools for creating clear AI instructions, including templates for research, images, and projects',
-      path: '/prompty'
-    },
-    {
-      icon: <Palette size={24} />,
-      title: 'Arty',
-      description:
-        'Art project management system to organize and track creative workflows from concept to completion',
-      path: '/arty'
+  const [prototypes, setPrototypes] = useState<Prototype[]>([])
+
+  // Load prototypes from JSON file
+  useEffect(() => {
+    // Using dynamic import for JSON
+    import('../../data/prototypes.json')
+      .then((data) => {
+        setPrototypes(data.default)
+      })
+      .catch((error) => {
+        console.error('Failed to load prototypes data:', error)
+      })
+  }, [])
+
+  // Map icon names to icon components
+  const getIconComponent = (iconName: string, size: number = 24) => {
+    switch (iconName) {
+      case 'Brain':
+        return <Brain size={size} />
+      case 'Zap':
+        return <ZapIcon size={size} />
+      case 'FileText':
+        return <FileText size={size} />
+      case 'Palette':
+        return <Palette size={size} />
+      case 'Grid':
+        return <Grid size={size} />
+      default:
+        return <ArrowRightCircle size={size} />
     }
-  ]
+  }
 
   return (
-    <div
-      style={{ height: '100%' }}
-      className="flex flex-col items-center justify-center bg-gradient-to-b from-green-900 to-green-800 p-6"
-    >
+    <div className="flex flex-col items-center justify-center bg-gradient-to-b from-green-900 to-green-800 p-6">
       <div className="w-full max-w-4xl">
         {/* Hero */}
         <div className="mb-10 text-center">
@@ -71,7 +79,7 @@ const TODDHomepage = () => {
               >
                 <div className="flex items-start">
                   <div className="mr-4 shrink-0 text-green-300">
-                    {prototype.icon}
+                    {getIconComponent(prototype.iconName)}
                   </div>
                   <div>
                     <h3 className="mb-2 text-lg font-medium text-green-100">

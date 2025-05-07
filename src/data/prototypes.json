@@ -1,0 +1,32 @@
+[
+  {
+    "iconName": "Brain",
+    "title": "Modely",
+    "description": "Visual design modeling tool for creating Entity Relationship diagrams and other structured visual schemas",
+    "path": "/modely"
+  },
+  {
+    "iconName": "FileText",
+    "title": "Recipes",
+    "description": "Culinary solution that generates recipes based on dietary requirements, available ingredients, and budget constraints",
+    "path": "/recipes"
+  },
+  {
+    "iconName": "Zap",
+    "title": "Prompty",
+    "description": "Structured prompt engineering tools for creating clear AI instructions, including templates for research, images, and projects",
+    "path": "/prompty"
+  },
+  {
+    "iconName": "Palette",
+    "title": "Arty",
+    "description": "Art project management system to organize and track creative workflows from concept to completion",
+    "path": "/arty"
+  },
+  {
+    "iconName": "Grid",
+    "title": "Reacty",
+    "description": "Custom GPT/Project for generating and optimizing prompts for Interactive React artifacts and components",
+    "path": "/reacty"
+  }
+]

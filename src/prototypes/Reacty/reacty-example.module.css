@@ -8,6 +8,8 @@
 }
 
 .game-container {
+  --board-size: min(80vw, 80vh);
+  --tile-size: calc(var(--board-size) / 8);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -98,14 +100,14 @@
 }
 
 .tile.matched {
-  animation: matched 0.5s forwards;
+  animation: reacty-matched 0.5s forwards;
 }
 
 .tile.falling {
   transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1.2);
 }
 
-@keyframes matched {
+@keyframes reacty-matched {
   0% {
     transform: scale(1);
     opacity: 1;
@@ -117,6 +119,25 @@
   100% {
     transform: scale(0);
     opacity: 0;
+  }
+}
+
+@keyframes reacty-level-up {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.5);
+  }
+  20% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.2);
+  }
+  80% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.5);
   }
 }
 
