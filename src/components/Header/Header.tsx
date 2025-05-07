@@ -10,6 +10,11 @@ const initialNavItems = [
     children: null
   },
   {
+    label: 'Prompty',
+    path: '/prompty',
+    children: null
+  },
+  {
     label: 'Prototypes',
     path: null,
     children: [] // Will be populated from prototypes.json

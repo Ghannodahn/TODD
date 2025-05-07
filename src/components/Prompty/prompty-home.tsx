@@ -1,5 +1,5 @@
 // Tool data in JSON format for easy extraction to external file
-import toolsData from '../../data/prompty/index.json'
+import toolsData from './index.json'
 import { ToolProps } from './prompty-tool'
 import PromptyTile from './prompty-tile'
 

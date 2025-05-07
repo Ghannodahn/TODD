@@ -1,5 +1,8 @@
 import { ToolProps } from './prompty-tool'
 
+// Define a type for feature items
+type Feature = string
+
 // Reusable PromptyTile component
 const PromptyTile = ({ tool }: { tool: ToolProps }) => {
   // Maps for accent colors (header/icon) and background colors
@@ -45,7 +48,7 @@ const PromptyTile = ({ tool }: { tool: ToolProps }) => {
 
         {/* Features */}
         <div className="mb-4 grow">
-          {tool.features.map((feature, index) => (
+          {tool.features.map((feature: Feature, index) => (
             <div key={index} className="mb-1 flex items-start text-sm">
               <span className="mr-1 shrink-0 text-blue-600">✓</span>
               <span>{feature}</span>

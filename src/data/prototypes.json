@@ -1,21 +1,15 @@
 [
   {
-    "iconName": "Brain",
-    "title": "Modely",
-    "description": "Visual design modeling tool for creating Entity Relationship diagrams and other structured visual schemas",
-    "path": "/modely"
+    "iconName": "Zap",
+    "title": "Prompty McProjectFace",
+    "description": "Transform your ideas into well-structured project instructions for AI platforms",
+    "path": "/prompty-gptproject"
   },
   {
     "iconName": "FileText",
     "title": "Recipes",
     "description": "Culinary solution that generates recipes based on dietary requirements, available ingredients, and budget constraints",
     "path": "/recipes"
-  },
-  {
-    "iconName": "Zap",
-    "title": "Prompty",
-    "description": "Structured prompt engineering tools for creating clear AI instructions, including templates for research, images, and projects",
-    "path": "/prompty"
   },
   {
     "iconName": "Palette",
@@ -28,5 +22,11 @@
     "title": "Reacty",
     "description": "Custom GPT/Project for generating and optimizing prompts for Interactive React artifacts and components",
     "path": "/reacty"
+  },
+  {
+    "iconName": "Brain",
+    "title": "Modely",
+    "description": "Visual design modeling tool for creating Entity Relationship diagrams and other structured visual schemas",
+    "path": "/modely"
   }
 ]
