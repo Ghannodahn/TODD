@@ -2,55 +2,28 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>TODD - Page Not Found</title>
+  <title>TODD - Redirecting</title>
   <script>
-    // Single Page App GitHub Pages Redirect Script
-    (function() {
-      // This only runs on GitHub Pages production environment
-      var pathSegments = window.location.pathname.split('/');
-      var repoName = "TODD"; // Your repository name
-
-      // Find where we are in the path
-      var repoIndex = pathSegments.indexOf(repoName);
-
-      if (repoIndex !== -1) {
-        // Path segments after the repo name
-        var pathAfterRepo = pathSegments.slice(repoIndex + 1).join('/');
-
-        // Redirect to the repo root with path info preserved in query
-        window.location.replace(
-          window.location.origin +
-          '/' + repoName + '/?path=' +
-          encodeURIComponent(pathAfterRepo) +
-          (window.location.search ? '&' + window.location.search.slice(1) : '') +
-          window.location.hash
-        );
-      }
-    })();
+    // Store the URL path in sessionStorage
+    sessionStorage.redirect = location.href;
   </script>
-  <script>
-    (function() {
-      var pathParam = new URLSearchParams(window.location.search).get('path');
-      if (pathParam) {
-        // Remove the 'path' parameter from search
-        var searchParams = new URLSearchParams(window.location.search);
-        searchParams.delete('path');
-
-        // Construct the correct path with repository name
-        var newPath = '/TODD/' + decodeURIComponent(pathParam);
-        var newSearch = searchParams.toString();
-
-        // Replace current state with the correct URL
-        window.history.replaceState(
-          null,
-          null,
-          newPath + (newSearch ? '?' + newSearch : '') + window.location.hash
-        );
-      }
-    })();
-  </script>
+  <!-- Immediately redirect to the base URL -->
+  <meta http-equiv="refresh" content="0;URL='/TODD/'">
 </head>
 <body>
   <h1>Redirecting...</h1>
+  <!-- Add this script to your public/index.html file -->
+  <script>
+    (function() {
+      // Check if we need to restore the URL
+      var redirect = sessionStorage.redirect;
+      delete sessionStorage.redirect;
+
+      if (redirect && redirect !== location.href) {
+        // Restore the URL without changing the browser history
+        history.replaceState(null, null, redirect);
+      }
+    })();
+  </script>
 </body>
 </html>
