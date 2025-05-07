@@ -30,14 +30,11 @@ const PromptyTile = ({ tool }: { tool: ToolProps }) => {
       {/* Colored header */}
       <div className={`h-2 ${accentColor}`}></div>
 
-      <div className="flex grow flex-col p-4">
-        {/* Icon */}
-        <div
-          className={`size-10 ${accentColor} mb-2 flex items-center justify-center rounded-md font-bold text-white`}
-        >
-          {tool.icon}
+      <div className="flex grow flex-col justify-center p-4">
+        <div className="mb-4 flex items-center justify-center">
+          {/* Icon */}
+          <img src={tool.icon} className="w-1/2"></img>{' '}
         </div>
-
         {/* Title */}
         <h3 className="mb-2 text-lg font-semibold text-slate-800">
           {tool.name}
