@@ -1,20 +1,21 @@
-import React from 'react'
-import { HashRouter } from 'react-router-dom'
+import { BrowserRouter } from 'react-router-dom'
 import Header from './components/Header/Header'
 import Content from './components/Content/Content'
 
 function App() {
-  const [currentView, setCurrentView] = React.useState('home')
+  // Set the basename to '/TODD' for GitHub Pages project deployment
+  const basePath = process.env.NODE_ENV === 'production' ? '/TODD' : ''
 
   return (
-    <HashRouter basename="/TODD">
-      <div className="flex min-h-screen flex-col">
+    <BrowserRouter basename={basePath}>
+      <div className="app">
         <Header />
-        <main className="flex-1">
+        <div className="content">
           <Content />
-        </main>
+        </div>
       </div>
-    </HashRouter>
+    </BrowserRouter>
   )
 }
+
 export default App
