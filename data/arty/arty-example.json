@@ -5,70 +5,70 @@
       "title": "White Paint",
       "details": "FolkArt Multi-Surface Acrylic • Titanium White • 8 oz",
       "iconName": "Droplets",
-      "color": "bg-indigo-600"
+      "color": "#4f46e5"
     },
     {
       "id": 2,
       "title": "Outdoor Medium",
       "details": "FolkArt Outdoor Sealer • 1:1 mix ratio for first coat",
       "iconName": "Beaker",
-      "color": "bg-blue-500"
+      "color": "#3b82f6"
     },
     {
       "id": 3,
       "title": "UV Sealer",
       "details": "FolkArt Outdoor Matte Sealer (K892) • 3 coats",
       "iconName": "Shield",
-      "color": "bg-green-500"
+      "color": "#22c55e"
     },
     {
       "id": 4,
       "title": "Brushes",
       "details": "Synthetic bristle • 1\" flat and 1/4\" round",
       "iconName": "PenTool",
-      "color": "bg-purple-500"
+      "color": "#a855f7"
     },
     {
       "id": 5,
       "title": "Canvas",
       "details": "Black canvas • Primed with outdoor primer",
       "iconName": "Package",
-      "color": "bg-yellow-600"
+      "color": "#ca8a04"
     },
     {
       "id": 6,
       "title": "Sandpaper",
       "details": "320-grit for between coats • 400-grit for final",
       "iconName": "Wrench",
-      "color": "bg-red-500"
+      "color": "#ef4444"
     },
     {
       "id": 7,
       "title": "Primer",
       "details": "FolkArt Outdoor White Primer • 2 coats",
       "iconName": "PenTool",
-      "color": "bg-pink-500"
+      "color": "#ec4899"
     },
     {
       "id": 8,
       "title": "Masking Tape",
       "details": "UV-resistant outdoor painter's tape",
       "iconName": "Package",
-      "color": "bg-teal-500"
+      "color": "#14b8a6"
     },
     {
       "id": 9,
       "title": "Cleaning Solution",
       "details": "Mild soap and distilled water",
       "iconName": "Droplets",
-      "color": "bg-blue-400"
+      "color": "#60a5fa"
     },
     {
       "id": 10,
       "title": "Varnish",
       "details": "FolkArt Clear Outdoor Varnish • Final protection",
       "iconName": "Shield",
-      "color": "bg-gray-500"
+      "color": "#6b7280"
     }
   ],
   "process": [
