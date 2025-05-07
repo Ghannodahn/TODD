@@ -2,28 +2,54 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Redirecting...</title>
+  <title>TODD - Page Not Found</title>
   <script>
-    // Single-page apps for GitHub Pages
-    // MIT License
-    // https://github.com/rafgraph/spa-github-pages
+    // Single Page App GitHub Pages Redirect Script
     (function() {
-      // This works by taking the current URL path and converting it to a
-      // query parameter that gets passed to the homepage, which then
-      // reconstructs the URL and uses History API to change the URL
-      var segmentCount = 1; // Adjust this value based on your repo structure
+      // This only runs on GitHub Pages production environment
+      var pathSegments = window.location.pathname.split('/');
+      var repoName = "TODD"; // Your repository name
 
-      var l = window.location;
-      l.replace(
-        l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
-        l.pathname.split('/').slice(0, 1 + segmentCount).join('/') + '/?p=/' +
-        l.pathname.slice(1).split('/').slice(segmentCount).join('/').replace(/&/g, '~and~') +
-        (l.search ? '&q=' + l.search.slice(1).replace(/&/g, '~and~') : '') +
-        l.hash
-      );
+      // Find where we are in the path
+      var repoIndex = pathSegments.indexOf(repoName);
+
+      if (repoIndex !== -1) {
+        // Path segments after the repo name
+        var pathAfterRepo = pathSegments.slice(repoIndex + 1).join('/');
+
+        // Redirect to the repo root with path info preserved in query
+        window.location.replace(
+          window.location.origin +
+          '/' + repoName + '/?path=' +
+          encodeURIComponent(pathAfterRepo) +
+          (window.location.search ? '&' + window.location.search.slice(1) : '') +
+          window.location.hash
+        );
+      }
     })();
   </script>
-  </head>
+  <script>
+    (function() {
+      var pathParam = new URLSearchParams(window.location.search).get('path');
+      if (pathParam) {
+        // Remove the 'path' parameter from search
+        var searchParams = new URLSearchParams(window.location.search);
+        searchParams.delete('path');
+
+        // Construct the correct path with repository name
+        var newPath = '/TODD/' + decodeURIComponent(pathParam);
+        var newSearch = searchParams.toString();
+
+        // Replace current state with the correct URL
+        window.history.replaceState(
+          null,
+          null,
+          newPath + (newSearch ? '?' + newSearch : '') + window.location.hash
+        );
+      }
+    })();
+  </script>
+</head>
 <body>
   <h1>Redirecting...</h1>
 </body>
