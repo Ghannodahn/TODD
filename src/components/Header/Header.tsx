@@ -2,8 +2,14 @@ import React, { useState, useRef, useEffect } from 'react'
 import { NavLink } from 'react-router-dom'
 import Prototype from '../../prototypes/prototypes'
 
+interface NavItem {
+  label: string
+  path: string | null
+  children: NavItem[] | null
+}
+
 // Initial navigation structure with Home only
-const initialNavItems = [
+const initialNavItems: NavItem[] = [
   {
     label: 'Home',
     path: '/',
@@ -27,35 +33,31 @@ const Header: React.FC = () => {
 
   // Load prototypes from JSON file
   useEffect(() => {
-    const fetchPrototypes = async () => {
-      try {
-        const response = await fetch('/src/data/prototypes.json')
-        if (!response.ok) {
-          throw new Error('Failed to load prototypes data')
-        }
-
-        const prototypesData = await response.json()
+    // Using dynamic import for JSON instead of fetch
+    import('../../data/prototypes.json')
+      .then((data) => {
+        const prototypesData = data.default
 
         // Update the Prototypes menu with data from JSON
         setNavItems((prevItems) =>
           prevItems.map((item) =>
             item.label === 'Prototypes'
               ? {
-                  ...item,
+                  label: item.label,
+                  path: item.path,
                   children: prototypesData.map((prototype: Prototype) => ({
                     label: prototype.title,
-                    path: prototype.path
+                    path: prototype.path,
+                    children: null
                   }))
                 }
               : item
           )
         )
-      } catch (error) {
+      })
+      .catch((error) => {
         console.error('Error loading prototypes:', error)
-      }
-    }
-
-    fetchPrototypes()
+      })
   }, [])
 
   // Define common button styles for consistency
@@ -137,27 +139,22 @@ const Header: React.FC = () => {
                   {/* Dropdown menu */}
                   {isDropdownOpen && (
                     <div className="absolute right-0 z-50 mt-2 w-40 rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5">
-                      {item.children?.map(
-                        (
-                          child: { path: string; label: string },
-                          childIndex
-                        ) => (
-                          <NavLink
-                            key={childIndex}
-                            to={child.path || ''}
-                            onClick={() => setIsDropdownOpen(false)}
-                            className={({ isActive }) =>
-                              `block w-full px-4 py-2 text-left text-sm ${
-                                isActive
-                                  ? 'bg-gray-100 text-blue-600'
-                                  : 'text-gray-700'
-                              } hover:bg-gray-100`
-                            }
-                          >
-                            {child.label}
-                          </NavLink>
-                        )
-                      )}{' '}
+                      {item.children?.map((child: NavItem, childIndex) => (
+                        <NavLink
+                          key={childIndex}
+                          to={child.path || ''}
+                          onClick={() => setIsDropdownOpen(false)}
+                          className={({ isActive }) =>
+                            `block w-full px-4 py-2 text-left text-sm ${
+                              isActive
+                                ? 'bg-gray-100 text-blue-600'
+                                : 'text-gray-700'
+                            } hover:bg-gray-100`
+                          }
+                        >
+                          {child.label}
+                        </NavLink>
+                      ))}{' '}
                     </div>
                   )}
                 </>
